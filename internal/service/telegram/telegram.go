@@ -4,12 +4,24 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/internal/service/kinozal"
 	"makarov.dev/bot/pkg/log"
+	"strconv"
 	"strings"
 	"time"
 )
 
-func Init() {
+const dateParseLayout = "2006-01-02"
+const day = time.Minute * 60 * 24
+
+type Service interface {
+	Init()
+}
+
+type ServiceImpl struct {
+}
+
+func (s ServiceImpl) Init() {
 	cfg := config.GetConfig().Telegram
 	if !cfg.Enable {
 		return
@@ -35,7 +47,7 @@ func Init() {
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 		msg.ReplyToMessageID = update.Message.MessageID
-		route(&msg)
+		s.route(&msg)
 
 		_, err := bot.Send(msg)
 		if err != nil {
@@ -44,24 +56,32 @@ func Init() {
 	}
 }
 
-func route(msg *tgbotapi.MessageConfig) {
-	txt := strings.ReplaceAll(msg.Text, "/dd", "")
-	txt = strings.TrimSpace(txt)
+func (s *ServiceImpl) route(msg *tgbotapi.MessageConfig) {
 	if strings.Contains(msg.Text, "/dd") {
-		msg.Text = dd(txt)
+		txt := strings.ReplaceAll(msg.Text, "/dd", "")
+		txt = strings.TrimSpace(txt)
+		msg.Text = s.ddCmd(txt)
+	}
+	if strings.Contains(msg.Text, "/add") {
+		txt := strings.ReplaceAll(msg.Text, "/add", "")
+		txt = strings.TrimSpace(txt)
+		msg.Text = s.addCmd(txt)
+	}
+	if strings.Contains(msg.Text, "/delete") {
+		txt := strings.ReplaceAll(msg.Text, "/delete", "")
+		txt = strings.TrimSpace(txt)
+		msg.Text = s.deleteCmd(txt)
 	}
 }
 
-const dateParseLayout = "2006-01-02"
-
-func dd(txt string) string {
+func (s *ServiceImpl) ddCmd(txt string) string {
 	location, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		return "Фигня с Location"
 	}
 	beautifulDay := time.Date(2019, time.April, 5, 19, 30, 0, 0, location)
 	if txt == "" {
-		return duration(time.Now(), beautifulDay)
+		return s.duration(time.Now(), beautifulDay)
 	}
 	split := strings.Split(txt, " ")
 	if len(split) == 1 {
@@ -69,7 +89,7 @@ func dd(txt string) string {
 		if err != nil {
 			return err.Error()
 		}
-		return duration(parse, beautifulDay)
+		return s.duration(parse, beautifulDay)
 	}
 	if len(split) == 2 {
 		parse1, err := time.Parse(dateParseLayout, split[0])
@@ -80,14 +100,48 @@ func dd(txt string) string {
 		if err != nil {
 			return err.Error()
 		}
-		return duration(parse1, parse2)
+		return s.duration(parse1, parse2)
 	}
 	return "Фигню прислал"
 }
 
-const day = time.Minute * 60 * 24
+func (s *ServiceImpl) addCmd(txt string) string {
+	if strings.Contains(txt, "kinozal") {
+		txt := strings.ReplaceAll(txt, "kinozal", "")
+		txt = strings.TrimSpace(txt)
+		return s.kinozalAddFavorite(txt)
+	}
+	return ""
+}
 
-func duration(a, b time.Time) string {
+func (s *ServiceImpl) deleteCmd(txt string) string {
+	if strings.Contains(txt, "kinozal") {
+		txt := strings.ReplaceAll(txt, "kinozal", "")
+		txt = strings.TrimSpace(txt)
+		return s.kinozalDeleteFavorite(txt)
+	}
+	return ""
+}
+
+func (s *ServiceImpl) kinozalAddFavorite(txt string) string {
+	id, err := strconv.ParseInt(txt, 10, 64)
+	if err != nil {
+		return err.Error()
+	}
+	kinozal.AddFavoriteCh <- id
+	return "Ok"
+}
+
+func (s *ServiceImpl) kinozalDeleteFavorite(txt string) string {
+	id, err := strconv.ParseInt(txt, 10, 64)
+	if err != nil {
+		return err.Error()
+	}
+	kinozal.DeleteFavoriteCh <- id
+	return "Ok"
+}
+
+func (s *ServiceImpl) duration(a, b time.Time) string {
 	d := b.Sub(a)
 
 	if d < 0 {

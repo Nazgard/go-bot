@@ -4,11 +4,20 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/internal/service"
+	"makarov.dev/bot/internal/service/kinozal"
+	"makarov.dev/bot/internal/service/lostfilm"
 	"makarov.dev/bot/pkg/log"
 	"time"
 )
 
-func Init() {
+type Registry struct {
+	FileService service.FileService
+	LFService   lostfilm.Service
+	KZService   kinozal.Service
+}
+
+func (reg *Registry) Init() {
 	cfg := config.GetConfig().Web
 
 	w := &log.Writer{}
@@ -25,8 +34,7 @@ func Init() {
 				param.StatusCode,
 				param.Latency,
 				param.Request.UserAgent(),
-				param.ErrorMessage,
-			)
+				param.ErrorMessage)
 		},
 		Output: gin.DefaultWriter,
 	})
@@ -35,8 +43,10 @@ func Init() {
 	r := gin.New()
 	r.Use(logger, gin.Recovery())
 
-	g := r.Group("/lostfilm")
-	go addLostfilm(g)
+	lfGroup := r.Group("/lostfilm")
+	go addLostfilm(lfGroup, reg.LFService, reg.FileService)
+	kinozalGroup := r.Group("/kinozal")
+	go addKinozal(kinozalGroup, reg.KZService, reg.FileService)
 
 	err := r.Run(cfg.Addr)
 	if err != nil {

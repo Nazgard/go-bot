@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-var r *repository.TwitchChatRepository
+type Service struct {
+	Repository repository.TwitchChatRepository
+}
 
-func Init() {
-	initRepository()
-
+func (s Service) Init() {
 	cfg := config.GetConfig().Twitch
 	client := twitch.NewAnonymousClient()
 	log.Debug("Going to connect twitch channels", strings.Join(cfg.Channels, ", "))
@@ -23,16 +23,10 @@ func Init() {
 	})
 
 	client.OnPrivateMessage(func(message twitch.PrivateMessage) {
-		go r.Insert(message)
+		go s.Repository.Insert(message)
 	})
 
 	client.Connect()
 
 	defer client.Disconnect()
-}
-
-func initRepository() {
-	if r == nil {
-		r = &repository.TwitchChatRepository{Database: repository.Database}
-	}
 }

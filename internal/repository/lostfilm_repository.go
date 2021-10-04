@@ -27,11 +27,19 @@ type ItemFile struct {
 	GridFsId    primitive.ObjectID `bson:"grid_fs_id"`
 }
 
-type LostFilmRepository struct {
+type LostFilmRepositoryImpl struct {
 	Database *mongo.Database
 }
 
-func (r *LostFilmRepository) FindLatest() ([]Item, error) {
+type LostFilmRepository interface {
+	FindLatest() ([]Item, error)
+	Exists(page string) (bool, error)
+	Insert(item *Item) error
+	Update(item *Item) error
+	GetByPage(page string) (*Item, error)
+}
+
+func (r *LostFilmRepositoryImpl) FindLatest() ([]Item, error) {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
@@ -58,7 +66,7 @@ func (r *LostFilmRepository) FindLatest() ([]Item, error) {
 	return items, nil
 }
 
-func (r *LostFilmRepository) Exists(page string) (bool, error) {
+func (r *LostFilmRepositoryImpl) Exists(page string) (bool, error) {
 	item, err := r.GetByPage(page)
 	if err != nil {
 		return false, err
@@ -69,7 +77,7 @@ func (r *LostFilmRepository) Exists(page string) (bool, error) {
 	return len(item.ItemFiles) >= 3, nil
 }
 
-func (r *LostFilmRepository) Insert(item *Item) error {
+func (r *LostFilmRepositoryImpl) Insert(item *Item) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
@@ -81,7 +89,7 @@ func (r *LostFilmRepository) Insert(item *Item) error {
 	return nil
 }
 
-func (r *LostFilmRepository) Update(item *Item) error {
+func (r *LostFilmRepositoryImpl) Update(item *Item) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
@@ -93,7 +101,7 @@ func (r *LostFilmRepository) Update(item *Item) error {
 	return nil
 }
 
-func (r *LostFilmRepository) GetByPage(page string) (*Item, error) {
+func (r *LostFilmRepositoryImpl) GetByPage(page string) (*Item, error) {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
@@ -114,10 +122,10 @@ func (r *LostFilmRepository) GetByPage(page string) (*Item, error) {
 	return &item, nil
 }
 
-func (r *LostFilmRepository) getCollection() *mongo.Collection {
+func (r *LostFilmRepositoryImpl) getCollection() *mongo.Collection {
 	return r.Database.Collection("lostfilm_items")
 }
 
-func (r *LostFilmRepository) getContext() (context.Context, context.CancelFunc) {
+func (r *LostFilmRepositoryImpl) getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 10*time.Second)
 }

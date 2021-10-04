@@ -10,6 +10,7 @@ require (
 	github.com/logzio/logzio-go v1.0.2
 	github.com/umputun/go-flags v1.5.1
 	go.mongodb.org/mongo-driver v1.7.2
+	golang.org/x/text v0.3.6
 )
 
 require (
@@ -44,7 +45,6 @@ require (
 	golang.org/x/net v0.0.0-20210913180222-943fd674d43e // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
 	golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71 // indirect
-	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

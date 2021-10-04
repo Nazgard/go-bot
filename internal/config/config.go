@@ -12,6 +12,7 @@ type Config struct {
 	Logzio   Logzio   `group:"Logzio" env-namespace:"LOGZIO"`
 	Telegram Telegram `group:"Telegram" env-namespace:"TELEGRAM"`
 	Twitch   Twitch   `group:"Twitch" env-namespace:"TWITCH"`
+	Kinozal  Kinozal  `group:"Kinozal" env-namespace:"KINOZAL"`
 }
 
 type LostFilm struct {
@@ -44,6 +45,11 @@ type Telegram struct {
 
 type Twitch struct {
 	Channels []string `long:"channel" env:"CHANNELS" env-delim:"," description:"Twitch channels to save messages"`
+}
+
+type Kinozal struct {
+	Domain string `long:"kinozal-domain" env:"DOMAIN" default:"http://kinozal.tv" description:"Kinozal domain"`
+	Cookie string `long:"kinozal-cookie" env:"COOKIE" required:"true" description:"Kinozal cookie"`
 }
 
 var config = &Config{}

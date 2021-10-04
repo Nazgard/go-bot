@@ -9,15 +9,7 @@ import (
 	"time"
 )
 
-var Database *mongo.Database
-var Bucket *gridfs.Bucket
-
-func Init() {
-	initDatabase()
-	initBucket(Database)
-}
-
-func initDatabase() {
+func InitDatabase() *mongo.Database {
 	cfg := config.GetConfig()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -26,13 +18,13 @@ func initDatabase() {
 		panic(err)
 	}
 
-	Database = client.Database(cfg.Database.DatabaseName)
+	return client.Database(cfg.Database.DatabaseName)
 }
 
-func initBucket(database *mongo.Database) {
-	bucket, err := gridfs.NewBucket(database)
+func InitBucket(db *mongo.Database) *gridfs.Bucket {
+	bucket, err := gridfs.NewBucket(db)
 	if err != nil {
 		panic(err)
 	}
-	Bucket = bucket
+	return bucket
 }

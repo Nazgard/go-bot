@@ -71,7 +71,7 @@ func Init() {
 	lostFilmCrawler := crawler.LostFilmCrawler{Service: lfService, Client: lfClient}
 	go lostFilmCrawler.Start()
 
-	kinozalCrawler := crawler.KinozalCrawler{Service: kzService, Client: kzClient}
+	kinozalCrawler := crawler.KinozalCrawler{Service: kzService, Client: kzClient, Bucket: *bucket}
 	go kinozalCrawler.Start()
 	//endregion
 

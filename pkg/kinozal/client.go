@@ -2,6 +2,7 @@ package kinozal
 
 import (
 	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/text/encoding/charmap"
 	"io"
 	"io/ioutil"
 	"makarov.dev/bot/pkg/log"
@@ -70,6 +71,11 @@ func (c Client) GetName(id int64) (string, error) {
 		return "", err
 	}
 	name := doc.Find(".content a").Eq(0).Text()
+	decoder := charmap.Windows1251.NewDecoder()
+	name, err = decoder.String(name)
+	if err != nil {
+		return "", err
+	}
 	return name, nil
 }
 

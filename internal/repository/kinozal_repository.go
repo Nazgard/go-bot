@@ -36,6 +36,10 @@ type KinozalRepositoryImpl struct {
 	Database *mongo.Database
 }
 
+func NewKinozalRepository(database *mongo.Database) *KinozalRepositoryImpl {
+	return &KinozalRepositoryImpl{Database: database}
+}
+
 func (r *KinozalRepositoryImpl) IsFavorite(id int64) (bool, error) {
 	ctx, cancelFunc := r.getContext()
 	defer cancelFunc()

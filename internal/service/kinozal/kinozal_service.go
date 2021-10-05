@@ -19,6 +19,10 @@ type ServiceImpl struct {
 	Repository repository.KinozalRepository
 }
 
+func NewKinozalService(repository repository.KinozalRepository) *ServiceImpl {
+	return &ServiceImpl{Repository: repository}
+}
+
 func (s ServiceImpl) Init() {
 	go s.listenAddFavorite()
 	go s.listenDeleteFavorite()

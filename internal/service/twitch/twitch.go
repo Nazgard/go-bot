@@ -9,7 +9,11 @@ import (
 )
 
 type Service struct {
-	Repository repository.TwitchChatRepository
+	Repository *repository.TwitchChatRepository
+}
+
+func NewTwitchService(repository *repository.TwitchChatRepository) *Service {
+	return &Service{Repository: repository}
 }
 
 func (s Service) Init() {

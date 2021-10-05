@@ -29,6 +29,14 @@ type Service interface {
 	Exist(page string) (bool, error)
 }
 
+func NewLostFilmService(client lostfilm.Client, repository repository.LostFilmRepository, bucket Bucket) *ServiceImpl {
+	return &ServiceImpl{
+		Client:     client,
+		Repository: repository,
+		Bucket:     bucket,
+	}
+}
+
 func (s ServiceImpl) Init() {
 
 }

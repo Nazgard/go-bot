@@ -9,6 +9,10 @@ type HealthService struct {
 
 }
 
+func NewHealthService() *HealthService {
+	return &HealthService{}
+}
+
 func (s HealthService) Init() {
 	for {
 		log.Debug("Health ok")

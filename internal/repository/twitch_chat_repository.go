@@ -27,6 +27,10 @@ type TwitchChatRepository struct {
 	Database *mongo.Database
 }
 
+func NewTwitchChatRepository(database *mongo.Database) *TwitchChatRepository {
+	return &TwitchChatRepository{Database: database}
+}
+
 func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 	ctx, cancel := r.getContext()
 	defer cancel()

@@ -17,7 +17,11 @@ type FileServiceImpl struct {
 	Bucket Bucket
 }
 
-func (receiver FileServiceImpl) Init() {
+func NewFileService(bucket Bucket) *FileServiceImpl {
+	return &FileServiceImpl{Bucket: bucket}
+}
+
+func (s FileServiceImpl) Init() {
 
 }
 

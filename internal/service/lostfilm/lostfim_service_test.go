@@ -20,15 +20,15 @@ type httpClientMock struct{}
 func (c *httpClientMock) Do(req *http.Request) (*http.Response, error) {
 	var file *os.File
 	if strings.HasPrefix(req.URL.Path, "/series") {
-		file, _ = os.Open("./episode_page.html")
+		file, _ = os.Open("./episode_page.thtml")
 	}
 	switch req.URL.Path {
 	case "/new":
-		file, _ = os.Open("./root_page.html")
+		file, _ = os.Open("./root_page.thtml")
 	case "/v_search.php":
-		file, _ = os.Open("./torrent_ref1.html")
+		file, _ = os.Open("./torrent_ref1.thtml")
 	case "/v3/index.php":
-		file, _ = os.Open("./torrent_ref2.html")
+		file, _ = os.Open("./torrent_ref2.thtml")
 	case "/td.php":
 		file, _ = os.Open("./Heels.S01E04.1080p.rus.LostFilm.TV.mkv.torrent")
 	}

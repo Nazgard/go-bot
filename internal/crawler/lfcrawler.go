@@ -12,6 +12,13 @@ type LostFilmCrawler struct {
 	Client  lfClient.Client
 }
 
+func NewLostFilmCrawler(service lostfilm.Service, client lfClient.Client) *LostFilmCrawler {
+	return &LostFilmCrawler{
+		Service: service,
+		Client:  client,
+	}
+}
+
 func (c *LostFilmCrawler) Start() {
 	ch := make(chan lfClient.RootElement)
 	go c.Client.Listing(ch, time.Minute)
@@ -24,6 +31,6 @@ func (c *LostFilmCrawler) Start() {
 		if exist {
 			continue
 		}
-		c.Service.StoreElement(element)
+		go c.Service.StoreElement(element)
 	}
 }

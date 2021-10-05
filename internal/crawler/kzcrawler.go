@@ -17,6 +17,14 @@ type KinozalCrawler struct {
 	Bucket  gridfs.Bucket
 }
 
+func NewKinozalCrawler(service kinozal.Service, client kinozalClient.Client, bucket gridfs.Bucket) *KinozalCrawler {
+	return &KinozalCrawler{
+		Service: service,
+		Client:  client,
+		Bucket:  bucket,
+	}
+}
+
 func (c *KinozalCrawler) Start() {
 	ch := make(chan int64)
 	go c.Client.Listing(ch, time.Minute)

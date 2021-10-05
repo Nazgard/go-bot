@@ -39,6 +39,10 @@ type LostFilmRepository interface {
 	GetByPage(page string) (*Item, error)
 }
 
+func NewLostFilmRepository(database *mongo.Database) *LostFilmRepositoryImpl {
+	return &LostFilmRepositoryImpl{Database: database}
+}
+
 func (r *LostFilmRepositoryImpl) FindLatest() ([]Item, error) {
 	ctx, cancel := r.getContext()
 	defer cancel()

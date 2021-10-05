@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const defaultMainPageUrl = "http://kinozal.tv"
+
 type Client struct {
 	Config ClientConfig
 }
@@ -29,6 +31,14 @@ type HttpClient interface {
 type Element struct {
 	Name        string
 	Torrent     []byte
+}
+
+func NewClient(cookie string) Client {
+	return Client{ClientConfig{
+		HttpClient:  &http.Client{Timeout: 30 * time.Second},
+		MainPageUrl: defaultMainPageUrl,
+		Cookie:      cookie,
+	}}
 }
 
 func (c Client) GetRoot() ([]int64, error) {

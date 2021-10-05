@@ -65,6 +65,14 @@ type FullItemTorrent struct {
 	Torrent     []byte `json:"-"`
 }
 
+func NewClient(cookieName, cookieVal string) Client {
+	return Client{Config: ClientConfig{
+		HttpClient:  &http.Client{Timeout: 30 * time.Second},
+		MainPageUrl: defaultMainPageUrl,
+		Cookie:      http.Cookie{Name: cookieName, Value: cookieVal},
+	}}
+}
+
 func (c Client) GetRoot() ([]RootElement, error) {
 	doc, err := c.getDoc(c.getMainPageUrl() + "/new")
 	if err != nil {

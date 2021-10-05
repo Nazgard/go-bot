@@ -21,6 +21,10 @@ type Service interface {
 type ServiceImpl struct {
 }
 
+func NewTelegramService() *ServiceImpl {
+	return &ServiceImpl{}
+}
+
 func (s ServiceImpl) Init() {
 	cfg := config.GetConfig().Telegram
 	if !cfg.Enable {

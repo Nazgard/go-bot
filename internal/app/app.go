@@ -13,8 +13,6 @@ import (
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
 	"makarov.dev/bot/pkg/log"
 	lostfilmClient "makarov.dev/bot/pkg/lostfilm"
-	"net/http"
-	"time"
 )
 
 func Init() {
@@ -22,42 +20,24 @@ func Init() {
 	log.Init()
 
 	//region db
-	db := repository.InitDatabase()
-	bucket := repository.InitBucket(db)
+	db := repository.NewDatabase()
+	bucket := repository.NewBucket(db)
 
-	lfRepository := repository.LostFilmRepositoryImpl{Database: db}
-	kzRepository := repository.KinozalRepositoryImpl{Database: db}
-	twitchChatRepository := repository.TwitchChatRepository{Database: db}
+	lfRepository := repository.NewLostFilmRepository(db)
+	kzRepository := repository.NewKinozalRepository(db)
+	twitchChatRepository := repository.NewTwitchChatRepository(db)
 	//endregion
 
 	//region services
-	lfClient := lostfilmClient.Client{
-		Config: lostfilmClient.ClientConfig{
-			HttpClient:  &http.Client{Timeout: 30 * time.Second},
-			MainPageUrl: config.GetConfig().LostFilm.Domain,
-			Cookie: http.Cookie{
-				Name:  config.GetConfig().LostFilm.CookieName,
-				Value: config.GetConfig().LostFilm.CookieVal,
-			},
-		},
-	}
-	kzClient := kinozalClient.Client{
-		Config: kinozalClient.ClientConfig{
-			HttpClient:  &http.Client{Timeout: 30 * time.Second},
-			MainPageUrl: config.GetConfig().Kinozal.Domain,
-			Cookie:      config.GetConfig().Kinozal.Cookie,
-		},
-	}
-	lfService := &lostfilm.ServiceImpl{
-		Client:     lfClient,
-		Repository: &lfRepository,
-		Bucket:     bucket,
-	}
-	kzService := &kinozal.ServiceImpl{Repository: &kzRepository}
-	telegramService := &telegram.ServiceImpl{}
-	twitchService := &twitch.Service{Repository: twitchChatRepository}
-	healthService := &service.HealthService{}
-	fileService := &service.FileServiceImpl{Bucket: bucket}
+	lfCfg := config.GetConfig().LostFilm
+	lfClient := lostfilmClient.NewClient(lfCfg.CookieName, lfCfg.CookieVal)
+	kzClient := kinozalClient.NewClient(config.GetConfig().Kinozal.Cookie)
+	lfService := lostfilm.NewLostFilmService(lfClient, lfRepository, bucket)
+	kzService := kinozal.NewKinozalService(kzRepository)
+	telegramService := telegram.NewTelegramService()
+	twitchService := twitch.NewTwitchService(twitchChatRepository)
+	healthService := service.NewHealthService()
+	fileService := service.NewFileService(bucket)
 
 	go lfService.Init()
 	go kzService.Init()
@@ -68,11 +48,8 @@ func Init() {
 	//endregion
 
 	//region crawlers
-	lostFilmCrawler := crawler.LostFilmCrawler{Service: lfService, Client: lfClient}
-	go lostFilmCrawler.Start()
-
-	kinozalCrawler := crawler.KinozalCrawler{Service: kzService, Client: kzClient, Bucket: *bucket}
-	go kinozalCrawler.Start()
+	go crawler.NewLostFilmCrawler(lfService, lfClient).Start()
+	go crawler.NewKinozalCrawler(kzService, kzClient, *bucket).Start()
 	//endregion
 
 	//region web

@@ -16,11 +16,11 @@ func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 	var file *os.File
 	switch req.URL.Path {
 	case "/browse.php":
-		file, _ = os.Open("./main_page.html")
+		file, _ = os.Open("./main_page.thtml")
 	case "/download.php":
 		file, _ = os.Open("./[kinozal.tv]id1866821.torrent")
 	case "/details.php":
-		file, _ = os.Open("./details.html")
+		file, _ = os.Open("./details.thtml")
 	}
 	return &http.Response{
 		StatusCode: 200,

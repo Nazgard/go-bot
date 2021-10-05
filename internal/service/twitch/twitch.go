@@ -6,6 +6,7 @@ import (
 	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/pkg/log"
 	"strings"
+	"time"
 )
 
 type Service struct {
@@ -27,10 +28,25 @@ func (s Service) Init() {
 	})
 
 	client.OnPrivateMessage(func(message twitch.PrivateMessage) {
-		go s.Repository.Insert(message)
+		go func() {
+			err := s.Repository.Insert(message)
+			if err != nil {
+				log.Error(err.Error())
+			}
+		}()
 	})
 
-	client.Connect()
+	err := client.Connect()
+	if err != nil {
+		log.Error(err.Error())
+		time.Sleep(10 * time.Second)
+		s.Init()
+	}
 
-	defer client.Disconnect()
+	defer func(client *twitch.Client) {
+		err := client.Disconnect()
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}(client)
 }

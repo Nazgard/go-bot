@@ -47,8 +47,10 @@ func (r *LostFilmRepositoryImpl) FindLatest() ([]Item, error) {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
+	limit := int64(50)
 	cursor, err := r.getCollection().Find(ctx, bson.D{}, &options.FindOptions{
 		Sort: bson.D{{"date", -1}, {"created", -1}},
+		Limit: &limit,
 	})
 	if err != nil {
 		log.Error(err.Error())

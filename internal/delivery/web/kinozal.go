@@ -12,9 +12,9 @@ import (
 
 func addKinozal(group *gin.RouterGroup, service kinozal.Service, fileService service.FileService) {
 	group.GET("/rss", func(ctx *gin.Context) {
-		episodes, err := service.LastKinozalEpisodes()
+		episodes, err := service.LastKinozalEpisodes(ctx)
 		if err != nil {
-			ctx.AbortWithError(500, err)
+			_ = ctx.AbortWithError(500, err)
 		}
 		var lastBuildDate string
 		if len(episodes) == 0 {
@@ -61,7 +61,7 @@ func addKinozal(group *gin.RouterGroup, service kinozal.Service, fileService ser
 
 		reader, err := fileService.GetFile(&objectID)
 		if err != nil {
-			ctx.AbortWithError(500, err)
+			_ = ctx.AbortWithError(500, err)
 		}
 		ctx.DataFromReader(http.StatusOK, reader.GetFile().Length, ".torrent", reader, extraHeaders)
 	})

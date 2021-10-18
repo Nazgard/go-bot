@@ -37,9 +37,9 @@ type RssChannelItem struct {
 func addLostfilm(group *gin.RouterGroup, service lostfilm.Service, fileService service.FileService) {
 	group.GET("/rss", func(ctx *gin.Context) {
 		quality := ctx.Query("quality")
-		episodes, err := service.LastEpisodes()
+		episodes, err := service.LastEpisodes(ctx)
 		if err != nil {
-			ctx.AbortWithError(500, err)
+			_ = ctx.AbortWithError(500, err)
 		}
 		rss := Rss{
 			Version: "1.0",
@@ -90,7 +90,7 @@ func addLostfilm(group *gin.RouterGroup, service lostfilm.Service, fileService s
 
 		reader, err := fileService.GetFile(&objectID)
 		if err != nil {
-			ctx.AbortWithError(500, err)
+			_ = ctx.AbortWithError(500, err)
 		}
 		ctx.DataFromReader(http.StatusOK, reader.GetFile().Length, ".torrent", reader, extraHeaders)
 	})

@@ -95,7 +95,7 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 			return
 		}
 
-		objectID, err := s.Bucket.UploadFromStream("file", bytes.NewReader(torrent))
+		objectID, err := s.Bucket.UploadFromStream(element.Name+". "+nameFull+".torrent", bytes.NewReader(torrent))
 		if err != nil {
 			log.Error("Error while store torrent", err.Error())
 			return

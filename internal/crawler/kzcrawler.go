@@ -8,6 +8,7 @@ import (
 	"makarov.dev/bot/internal/service/kinozal"
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
 	"makarov.dev/bot/pkg/log"
+	"strconv"
 	"time"
 )
 
@@ -53,7 +54,7 @@ func (c *KinozalCrawler) Start() {
 
 		element, _ := c.Client.GetElement(id)
 
-		objectID, err := c.Bucket.UploadFromStream("file", bytes.NewReader(element.Torrent))
+		objectID, err := c.Bucket.UploadFromStream(strconv.FormatInt(id, 10)+".torrent", bytes.NewReader(element.Torrent))
 		if err != nil {
 			log.Error("Error while store torrent", err.Error())
 			continue

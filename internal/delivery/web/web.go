@@ -44,9 +44,11 @@ func (reg *Registry) Init() {
 	r.Use(logger, gin.Recovery())
 
 	lfGroup := r.Group("/lostfilm")
-	go addLostfilm(lfGroup, reg.LFService, reg.FileService)
+	go addLostfilm(lfGroup, reg.LFService)
 	kinozalGroup := r.Group("/kinozal")
-	go addKinozal(kinozalGroup, reg.KZService, reg.FileService)
+	go addKinozal(kinozalGroup, reg.KZService)
+	fileGroup := r.Group("/dl")
+	go addFile(fileGroup, reg.FileService)
 
 	err := r.Run(cfg.Addr)
 	if err != nil {

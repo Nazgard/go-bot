@@ -2,6 +2,7 @@ package lostfilm
 
 import (
 	"bufio"
+	"context"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -54,7 +55,7 @@ type repositoryMock struct{}
 
 var items = make([]repository.Item, 0)
 
-func (r repositoryMock) FindLatest() ([]repository.Item, error) {
+func (r repositoryMock) FindLatest(ctx context.Context) ([]repository.Item, error) {
 	return items, nil
 }
 
@@ -122,7 +123,7 @@ func TestService_Init(t *testing.T) {
 
 func TestService_LastEpisodes(t *testing.T) {
 	service.StoreElement(fakeRootElement)
-	episodes, err := service.LastEpisodes()
+	episodes, err := service.LastEpisodes(context.Background())
 	if err != nil {
 		t.Error(err)
 	}

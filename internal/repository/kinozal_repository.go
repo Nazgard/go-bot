@@ -16,7 +16,7 @@ type KinozalRepository interface {
 	Insert(item KinozalItem) error
 	InsertFavorite(detailId int64) error
 	DeleteFavorite(detailId int64) error
-	LastEpisodes() ([]KinozalItem, error)
+	LastEpisodes(ctx context.Context) ([]KinozalItem, error)
 }
 
 type Favorite struct {
@@ -107,12 +107,11 @@ func (r *KinozalRepositoryImpl) DeleteFavorite(detailId int64) error {
 	return nil
 }
 
-func (r *KinozalRepositoryImpl) LastEpisodes() ([]KinozalItem, error) {
-	ctx, cancel := r.getContext()
-	defer cancel()
-
+func (r *KinozalRepositoryImpl) LastEpisodes(ctx context.Context) ([]KinozalItem, error) {
+	limit := int64(50)
 	cursor, err := r.getItemsCollection().Find(ctx, bson.D{}, &options.FindOptions{
-		Sort: bson.D{{"created", -1}},
+		Sort:  bson.D{{"created", -1}},
+		Limit: &limit,
 	})
 	if err != nil {
 		log.Error(err.Error())

@@ -2,11 +2,8 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/service"
 	"makarov.dev/bot/internal/service/lostfilm"
-	"net/http"
 )
 
 const dateLayout = "Mon, 02 Jan 2006 15:04:05 -0700"
@@ -34,12 +31,28 @@ type RssChannelItem struct {
 	Uid          string `xml:"uid"`
 }
 
-func addLostfilm(group *gin.RouterGroup, service lostfilm.Service, fileService service.FileService) {
-	group.GET("/rss", func(ctx *gin.Context) {
+type LostFilmController struct {
+	Service lostfilm.Service
+}
+
+func (c *LostFilmController) Add(g *gin.RouterGroup) {
+	g.GET("/rss", c.rss())
+}
+
+// @Tags LostFilm controller
+// @Param quality query string false "Quality filter"
+// @Produce xml
+// @Produce json
+// @Success 200 {object} Rss
+// @Failure 400,500 {object} HTTPError
+// @Router /lostfilm/rss [get]
+func (c LostFilmController) rss() func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
 		quality := ctx.Query("quality")
-		episodes, err := service.LastEpisodes()
+		episodes, err := c.Service.LastEpisodes(ctx)
 		if err != nil {
-			ctx.AbortWithError(500, err)
+			NewError(ctx, 500, err)
+			return
 		}
 		rss := Rss{
 			Version: "1.0",
@@ -60,7 +73,7 @@ func addLostfilm(group *gin.RouterGroup, service lostfilm.Service, fileService s
 				}
 				rss.Channel.Items = append(rss.Channel.Items, RssChannelItem{
 					Title:        episode.Name + ". " + episode.EpisodeNameFull,
-					Link:         config.GetConfig().Web.Domain + "/lostfilm/dl/" + file.GridFsId.Hex(),
+					Link:         config.GetConfig().Web.Domain + "/dl/" + file.GridFsId.Hex(),
 					PubDate:      episode.Created.Format(dateLayout),
 					Description:  file.Description,
 					OriginalDate: episode.Date.Format(dateLayout),
@@ -71,27 +84,5 @@ func addLostfilm(group *gin.RouterGroup, service lostfilm.Service, fileService s
 		}
 
 		ctx.XML(200, rss)
-	})
-
-	group.GET("/dl/:fileId", func(ctx *gin.Context) {
-		fileId := ctx.Param("fileId")
-		if fileId == "" {
-			ctx.AbortWithStatus(400)
-		}
-
-		objectID, err := primitive.ObjectIDFromHex(fileId)
-		if err != nil {
-			ctx.AbortWithStatus(400)
-		}
-
-		extraHeaders := map[string]string{
-			"Content-Disposition": "attachment; filename=" + objectID.Hex() + ".torrent",
-		}
-
-		reader, err := fileService.GetFile(&objectID)
-		if err != nil {
-			ctx.AbortWithError(500, err)
-		}
-		ctx.DataFromReader(http.StatusOK, reader.GetFile().Length, ".torrent", reader, extraHeaders)
-	})
+	}
 }

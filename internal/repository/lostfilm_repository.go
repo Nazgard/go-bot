@@ -32,7 +32,7 @@ type LostFilmRepositoryImpl struct {
 }
 
 type LostFilmRepository interface {
-	FindLatest() ([]Item, error)
+	FindLatest(ctx context.Context) ([]Item, error)
 	Exists(page string) (bool, error)
 	Insert(item *Item) error
 	Update(item *Item) error
@@ -43,12 +43,11 @@ func NewLostFilmRepository(database *mongo.Database) *LostFilmRepositoryImpl {
 	return &LostFilmRepositoryImpl{Database: database}
 }
 
-func (r *LostFilmRepositoryImpl) FindLatest() ([]Item, error) {
-	ctx, cancel := r.getContext()
-	defer cancel()
-
+func (r *LostFilmRepositoryImpl) FindLatest(ctx context.Context) ([]Item, error) {
+	limit := int64(50)
 	cursor, err := r.getCollection().Find(ctx, bson.D{}, &options.FindOptions{
-		Sort: bson.D{{"date", -1}, {"created", -1}},
+		Sort:  bson.D{{"date", -1}, {"created", -1}},
+		Limit: &limit,
 	})
 	if err != nil {
 		log.Error(err.Error())

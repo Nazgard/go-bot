@@ -2,6 +2,7 @@ package lostfilm
 
 import (
 	"bytes"
+	"context"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -24,7 +25,7 @@ type ServiceImpl struct {
 
 type Service interface {
 	Init()
-	LastEpisodes() ([]repository.Item, error)
+	LastEpisodes(ctx context.Context) ([]repository.Item, error)
 	StoreElement(element lostfilm.RootElement)
 	Exist(page string) (bool, error)
 }
@@ -41,8 +42,8 @@ func (s ServiceImpl) Init() {
 
 }
 
-func (s *ServiceImpl) LastEpisodes() ([]repository.Item, error) {
-	return s.Repository.FindLatest()
+func (s *ServiceImpl) LastEpisodes(ctx context.Context) ([]repository.Item, error) {
+	return s.Repository.FindLatest(ctx)
 }
 
 func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
@@ -94,7 +95,7 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 			return
 		}
 
-		objectID, err := s.Bucket.UploadFromStream("file", bytes.NewReader(torrent))
+		objectID, err := s.Bucket.UploadFromStream(element.Name+". "+nameFull+".torrent", bytes.NewReader(torrent))
 		if err != nil {
 			log.Error("Error while store torrent", err.Error())
 			return

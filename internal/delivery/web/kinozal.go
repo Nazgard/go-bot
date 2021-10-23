@@ -15,11 +15,18 @@ func (c *KinozalController) Add(g *gin.RouterGroup) {
 	g.GET("rss", c.rss())
 }
 
+// @Tags Kinozal controller
+// @Produce xml
+// @Produce json
+// @Success 200 {object} Rss
+// @Failure 400,500 {object} HTTPError
+// @Router /kinozal/rss [get]
 func (c KinozalController) rss() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		episodes, err := c.Service.LastKinozalEpisodes(ctx)
 		if err != nil {
-			_ = ctx.AbortWithError(500, err)
+			NewError(ctx, 500, err)
+			return
 		}
 		var lastBuildDate string
 		if len(episodes) == 0 {

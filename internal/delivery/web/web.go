@@ -3,6 +3,9 @@ package web
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"makarov.dev/bot/docs"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/service"
 	"makarov.dev/bot/internal/service/kinozal"
@@ -21,8 +24,25 @@ type Registry struct {
 	KZService   kinozal.Service
 }
 
+// NewError example
+func NewError(ctx *gin.Context, status int, err error) {
+	er := HTTPError{
+		Code:    status,
+		Message: err.Error(),
+	}
+	ctx.AbortWithStatusJSON(status, er)
+}
+
+// HTTPError example
+type HTTPError struct {
+	Code    int    `json:"code" example:"400"`
+	Message string `json:"message" example:"status bad request"`
+}
+
 func (reg *Registry) Init() {
 	cfg := config.GetConfig().Web
+
+	docs.SwaggerInfo.BasePath = "/"
 
 	w := &log.Writer{}
 	gin.DefaultErrorWriter = w
@@ -64,6 +84,8 @@ func (reg *Registry) Init() {
 		ctr := FileController{FileService: reg.FileService}
 		go ctr.Add(fileGroup)
 	}
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	err := r.Run(cfg.Addr)
 	if err != nil {

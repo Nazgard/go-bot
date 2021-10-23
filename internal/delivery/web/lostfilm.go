@@ -31,10 +31,18 @@ type RssChannelItem struct {
 	Uid          string `xml:"uid"`
 }
 
-func addLostfilm(group *gin.RouterGroup, service lostfilm.Service) {
-	group.GET("/rss", func(ctx *gin.Context) {
+type LostFilmController struct {
+	Service lostfilm.Service
+}
+
+func (c *LostFilmController) Add(g *gin.RouterGroup) {
+	g.GET("/rss", c.rss())
+}
+
+func (c LostFilmController) rss() func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
 		quality := ctx.Query("quality")
-		episodes, err := service.LastEpisodes(ctx)
+		episodes, err := c.Service.LastEpisodes(ctx)
 		if err != nil {
 			_ = ctx.AbortWithError(500, err)
 		}
@@ -68,5 +76,5 @@ func addLostfilm(group *gin.RouterGroup, service lostfilm.Service) {
 		}
 
 		ctx.XML(200, rss)
-	})
+	}
 }

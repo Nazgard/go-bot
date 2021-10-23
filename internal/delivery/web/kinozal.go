@@ -7,9 +7,17 @@ import (
 	"time"
 )
 
-func addKinozal(group *gin.RouterGroup, service kinozal.Service) {
-	group.GET("/rss", func(ctx *gin.Context) {
-		episodes, err := service.LastKinozalEpisodes(ctx)
+type KinozalController struct {
+	Service kinozal.Service
+}
+
+func (c *KinozalController) Add(g *gin.RouterGroup) {
+	g.GET("rss", c.rss())
+}
+
+func (c KinozalController) rss() func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
+		episodes, err := c.Service.LastKinozalEpisodes(ctx)
 		if err != nil {
 			_ = ctx.AbortWithError(500, err)
 		}
@@ -39,5 +47,5 @@ func addKinozal(group *gin.RouterGroup, service kinozal.Service) {
 		}
 
 		ctx.XML(200, rss)
-	})
+	}
 }

@@ -7,8 +7,16 @@ import (
 	"net/http"
 )
 
-func addFile(group *gin.RouterGroup, fileService service.FileService) {
-	group.GET(":fileId", func(ctx *gin.Context) {
+type FileController struct {
+	FileService service.FileService
+}
+
+func (c *FileController) Add(g *gin.RouterGroup) {
+	g.GET(":fileId", c.downloadFile())
+}
+
+func (c FileController) downloadFile() func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
 		fileId := ctx.Param("fileId")
 		if fileId == "" {
 			ctx.AbortWithStatus(400)
@@ -19,7 +27,7 @@ func addFile(group *gin.RouterGroup, fileService service.FileService) {
 			ctx.AbortWithStatus(400)
 		}
 
-		reader, err := fileService.GetFile(&objectID)
+		reader, err := c.FileService.GetFile(&objectID)
 		if err != nil {
 			_ = ctx.AbortWithError(500, err)
 		}
@@ -28,5 +36,5 @@ func addFile(group *gin.RouterGroup, fileService service.FileService) {
 			"Content-Disposition": "attachment; filename=" + file.Name,
 		}
 		ctx.DataFromReader(http.StatusOK, file.Length, file.Name, reader, extraHeaders)
-	})
+	}
 }

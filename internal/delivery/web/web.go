@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+type Controller interface {
+	Add(g *gin.RouterGroup)
+}
+
 type Registry struct {
 	FileService service.FileService
 	LFService   lostfilm.Service
@@ -44,11 +48,22 @@ func (reg *Registry) Init() {
 	r.Use(logger, gin.Recovery())
 
 	lfGroup := r.Group("/lostfilm")
-	go addLostfilm(lfGroup, reg.LFService)
+	{
+		ctr := LostFilmController{Service: reg.LFService}
+		ctr.Add(lfGroup)
+	}
+
 	kinozalGroup := r.Group("/kinozal")
-	go addKinozal(kinozalGroup, reg.KZService)
+	{
+		ctr := KinozalController{Service: reg.KZService}
+		go ctr.Add(kinozalGroup)
+	}
+
 	fileGroup := r.Group("/dl")
-	go addFile(fileGroup, reg.FileService)
+	{
+		ctr := FileController{FileService: reg.FileService}
+		go ctr.Add(fileGroup)
+	}
 
 	err := r.Run(cfg.Addr)
 	if err != nil {

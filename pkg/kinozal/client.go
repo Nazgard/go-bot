@@ -29,12 +29,12 @@ type HttpClient interface {
 }
 
 type Element struct {
-	Name        string
-	Torrent     []byte
+	Name    string
+	Torrent []byte
 }
 
-func NewClient(cookie string) Client {
-	return Client{ClientConfig{
+func NewClient(cookie string) *Client {
+	return &Client{ClientConfig{
 		HttpClient:  &http.Client{Timeout: 30 * time.Second},
 		MainPageUrl: defaultMainPageUrl,
 		Cookie:      cookie,
@@ -44,7 +44,7 @@ func NewClient(cookie string) Client {
 func (c Client) GetRoot() ([]int64, error) {
 	ids := make([]int64, 0, 50)
 
-	doc, err := c.getDoc(c.Config.MainPageUrl + "/browse.php?s=&g=0&c=1001&v=0&d=0&w=3&t=0&f=0")
+	doc, err := c.getDoc(c.Config.MainPageUrl + "/browse.php")
 	if err != nil {
 		return nil, err
 	}

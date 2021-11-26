@@ -14,11 +14,11 @@ import (
 
 type KinozalCrawler struct {
 	Service kinozal.Service
-	Client  kinozalClient.Client
-	Bucket  gridfs.Bucket
+	Client  *kinozalClient.Client
+	Bucket  *gridfs.Bucket
 }
 
-func NewKinozalCrawler(service kinozal.Service, client kinozalClient.Client, bucket gridfs.Bucket) *KinozalCrawler {
+func NewKinozalCrawler(service kinozal.Service, client *kinozalClient.Client, bucket *gridfs.Bucket) *KinozalCrawler {
 	return &KinozalCrawler{
 		Service: service,
 		Client:  client,
@@ -60,7 +60,7 @@ func (c *KinozalCrawler) Start() {
 			continue
 		}
 
-		err = c.Service.Save(repository.KinozalItem{
+		err = c.Service.Save(&repository.KinozalItem{
 			Id:       primitive.NewObjectID(),
 			Name:     element.Name,
 			DetailId: id,

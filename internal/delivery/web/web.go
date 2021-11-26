@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -66,6 +67,8 @@ func (reg *Registry) Init() {
 	gin.SetMode(cfg.Mode)
 	r := gin.New()
 	r.Use(logger, gin.Recovery())
+
+	pprof.Register(r, "dev/pprof")
 
 	lfGroup := r.Group("/lostfilm")
 	{

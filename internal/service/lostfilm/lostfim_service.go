@@ -18,7 +18,7 @@ type Bucket interface {
 }
 
 type ServiceImpl struct {
-	Client     lostfilm.Client
+	Client     *lostfilm.Client
 	Repository repository.LostFilmRepository
 	Bucket     Bucket
 }
@@ -30,7 +30,7 @@ type Service interface {
 	Exist(page string) (bool, error)
 }
 
-func NewLostFilmService(client lostfilm.Client, repository repository.LostFilmRepository, bucket Bucket) *ServiceImpl {
+func NewLostFilmService(client *lostfilm.Client, repository repository.LostFilmRepository, bucket Bucket) *ServiceImpl {
 	return &ServiceImpl{
 		Client:     client,
 		Repository: repository,

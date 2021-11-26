@@ -45,7 +45,7 @@ func (b bucketMock) UploadFromStream(filename string, source io.Reader, opts ...
 	return primitive.NewObjectID(), nil
 }
 
-var client = lostfilm.Client{Config: lostfilm.ClientConfig{
+var client = &lostfilm.Client{Config: lostfilm.ClientConfig{
 	HttpClient:  &httpClientMock{},
 	MainPageUrl: "",
 	Cookie:      http.Cookie{},

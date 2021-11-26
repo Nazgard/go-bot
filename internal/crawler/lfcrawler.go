@@ -9,10 +9,10 @@ import (
 
 type LostFilmCrawler struct {
 	Service lostfilm.Service
-	Client  lfClient.Client
+	Client  *lfClient.Client
 }
 
-func NewLostFilmCrawler(service lostfilm.Service, client lfClient.Client) *LostFilmCrawler {
+func NewLostFilmCrawler(service lostfilm.Service, client *lfClient.Client) *LostFilmCrawler {
 	return &LostFilmCrawler{
 		Service: service,
 		Client:  client,

@@ -12,7 +12,7 @@ var DeleteFavoriteCh = make(chan int64)
 type Service interface {
 	IsFavorite(id int64) (bool, error)
 	Exists(id int64, name string) (bool, error)
-	Save(item repository.KinozalItem) error
+	Save(item *repository.KinozalItem) error
 	LastKinozalEpisodes(ctx context.Context) ([]repository.KinozalItem, error)
 }
 
@@ -55,7 +55,7 @@ func (s *ServiceImpl) Exists(id int64, name string) (bool, error) {
 	return s.Repository.Exist(id, name)
 }
 
-func (s *ServiceImpl) Save(item repository.KinozalItem) error {
+func (s *ServiceImpl) Save(item *repository.KinozalItem) error {
 	return s.Repository.Insert(item)
 }
 

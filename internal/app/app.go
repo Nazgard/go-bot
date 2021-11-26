@@ -49,7 +49,7 @@ func Init() {
 
 	//region crawlers
 	go crawler.NewLostFilmCrawler(lfService, lfClient).Start()
-	go crawler.NewKinozalCrawler(kzService, kzClient, *bucket).Start()
+	go crawler.NewKinozalCrawler(kzService, kzClient, bucket).Start()
 	//endregion
 
 	//region web

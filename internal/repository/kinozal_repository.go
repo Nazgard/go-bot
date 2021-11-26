@@ -13,7 +13,7 @@ import (
 type KinozalRepository interface {
 	IsFavorite(id int64) (bool, error)
 	Exist(id int64, name string) (bool, error)
-	Insert(item KinozalItem) error
+	Insert(item *KinozalItem) error
 	InsertFavorite(detailId int64) error
 	DeleteFavorite(detailId int64) error
 	LastEpisodes(ctx context.Context) ([]KinozalItem, error)
@@ -68,7 +68,7 @@ func (r *KinozalRepositoryImpl) Exist(id int64, name string) (bool, error) {
 	return true, nil
 }
 
-func (r *KinozalRepositoryImpl) Insert(item KinozalItem) error {
+func (r *KinozalRepositoryImpl) Insert(item *KinozalItem) error {
 	ctx, cancelFunc := r.getContext()
 	defer cancelFunc()
 

@@ -30,8 +30,7 @@ func Init() {
 		logzio.SetDebug(nil),
 		logzio.SetUrl("https://listener-eu.logz.io:8071"),
 		logzio.SetInMemoryQueue(true),
-		logzio.SetinMemoryCapacity(24000000),
-		logzio.SetlogCountLimit(6000000),
+		logzio.SetinMemoryCapacity(1024*1024),
 	)
 	if err != nil {
 		panic(err)

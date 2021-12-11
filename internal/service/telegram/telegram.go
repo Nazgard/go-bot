@@ -2,13 +2,14 @@ package telegram
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/service/kinozal"
 	"makarov.dev/bot/pkg/log"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const dateParseLayout = "2006-01-02"
@@ -32,17 +33,22 @@ func (s ServiceImpl) Init() {
 	}
 	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
-		panic(err)
+		log.Error("Error while connect to telegram", err.Error(), "retrying in 15 sec")
+		time.Sleep(15 * time.Second)
+		s.Init()
 	}
 
 	bot.Debug = cfg.Debug
 
-	log.Info("Authorized on account", bot.Self.UserName)
+	log.Info("Authorized on telegram account", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
+	if err != nil {
+		log.Error("Error while get telegram updates", err.Error())
+	}
 
 	for update := range updates {
 		if update.Message == nil {
@@ -55,7 +61,7 @@ func (s ServiceImpl) Init() {
 
 		_, err := bot.Send(msg)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error("Error while send telegram message", err.Error())
 		}
 	}
 }

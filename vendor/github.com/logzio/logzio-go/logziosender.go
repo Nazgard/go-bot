@@ -291,6 +291,7 @@ func (l *LogzioSender) makeHttpRequest(data bytes.Buffer, attempt int, c bool) i
 	if c {
 		req.Header.Add("Content-Encoding", "gzip")
 	}
+	l.debugLog("logziosender.go: Sending bulk of %v bytes\n", l.buf.Len())
 	resp, err := l.httpClient.Do(req)
 	if err != nil {
 		//l.debugLog("logziosender.go: Error sending logs to %s %s\n", l.url, err)
@@ -303,6 +304,7 @@ func (l *LogzioSender) makeHttpRequest(data bytes.Buffer, attempt int, c bool) i
 	if err != nil {
 		l.debugLog("Error reading response body: %v", err)
 	}
+	l.debugLog("logziosender.go: Response status code: %v \n", statusCode)
 	if statusCode == 200 {
 		l.droppedLogs = 0
 	}
@@ -354,18 +356,18 @@ func (l *LogzioSender) shouldRetry(statusCode int) bool {
 func (l *LogzioSender) Drain() {
 	if l.draining.Load() {
 		l.debugLog("logziosender.go: Already draining\n")
+		return
 	}
 	l.mux.Lock()
 	l.debugLog("logziosender.go: draining queue\n")
 	defer l.mux.Unlock()
 	l.draining.Toggle()
 	defer l.draining.Toggle()
-
-	l.buf.Reset()
-	var reDrain bool = true
+	var reDrain = true
 	for l.queue.Length() > 0 && reDrain {
-		bufSize := l.dequeueUpToMaxBatchSize()
-		if bufSize > 0 {
+		l.buf.Reset()
+		l.dequeueUpToMaxBatchSize()
+		if len(l.buf.Bytes()) > 0 {
 			backOff := sendSleepingBackoff
 			toBackOff := false
 			for attempt := 0; attempt < sendRetries; attempt++ {
@@ -391,24 +393,23 @@ func (l *LogzioSender) Drain() {
 
 }
 
-func (l *LogzioSender) dequeueUpToMaxBatchSize() int {
+func (l *LogzioSender) dequeueUpToMaxBatchSize() {
 	var (
-		bufSize int
-		err     error
+		err error
 	)
-	for bufSize < maxSize && err == nil {
+	for l.buf.Len() < maxSize && err == nil {
 		item, err := l.queue.Dequeue()
 		if err != nil {
 			l.debugLog("queue state: %s\n", err)
 		}
 		if item != nil {
 			// NewLine is appended tp item.Value
-			if len(item.Value)+bufSize+1 > maxSize {
+			if len(item.Value)+l.buf.Len()+1 >= maxSize {
+				l.queue.Enqueue(item.Value)
 				break
 			}
-			bufSize += len(item.Value)
-			l.debugLog("logziosender.go: Adding item with size %d (total buffSize: %d)\n", len(item.Value), bufSize)
 			_, err := l.buf.Write(append(item.Value, '\n'))
+			//l.debugLog("logziosender.go: Adding item with size %d (total buffSize: %d)\n", len(item.Value), l.buf.Len())
 			if err != nil {
 				l.errorLog("error writing to buffer %s", err)
 			}
@@ -416,7 +417,6 @@ func (l *LogzioSender) dequeueUpToMaxBatchSize() int {
 			break
 		}
 	}
-	return bufSize
 }
 
 // Sync drains the queue

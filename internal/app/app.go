@@ -26,6 +26,7 @@ func Init() {
 	lfRepository := repository.NewLostFilmRepository(db)
 	kzRepository := repository.NewKinozalRepository(db)
 	twitchChatRepository := repository.NewTwitchChatRepository(db)
+	fileRepository := repository.NewFileRepository(db)
 	//endregion
 
 	//region services
@@ -37,7 +38,7 @@ func Init() {
 	telegramService := telegram.NewTelegramService()
 	twitchService := twitch.NewTwitchService(twitchChatRepository)
 	healthService := service.NewHealthService()
-	fileService := service.NewFileService(bucket)
+	fileService := service.NewFileService(bucket, fileRepository)
 
 	go lfService.Init()
 	go kzService.Init()

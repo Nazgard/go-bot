@@ -55,19 +55,12 @@ func (r *LostFilmRepositoryImpl) FindLatest(ctx context.Context) ([]Item, error)
 		log.Error(err.Error())
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
 	items := make([]Item, 0)
-
-	for cursor.Next(ctx) {
-		item := Item{}
-		err := cursor.Decode(&item)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, item)
+	err = cursor.All(ctx, &items)
+	if err != nil {
+		log.Error(err.Error())
+		return nil, err
 	}
-
 	return items, nil
 }
 

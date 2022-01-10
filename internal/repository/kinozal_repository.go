@@ -117,19 +117,12 @@ func (r *KinozalRepositoryImpl) LastEpisodes(ctx context.Context) ([]KinozalItem
 		log.Error(err.Error())
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
 	items := make([]KinozalItem, 0)
-
-	for cursor.Next(ctx) {
-		item := KinozalItem{}
-		err := cursor.Decode(&item)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, item)
+	err = cursor.All(ctx, &items)
+	if err != nil {
+		log.Error(err.Error())
+		return nil, err
 	}
-
 	return items, nil
 }
 

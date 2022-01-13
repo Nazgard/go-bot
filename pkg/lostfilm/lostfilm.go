@@ -2,14 +2,15 @@ package lostfilm
 
 import (
 	"errors"
-	"github.com/PuerkitoBio/goquery"
 	"io"
 	"io/ioutil"
-	"makarov.dev/bot/pkg/log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"makarov.dev/bot/pkg/log"
 )
 
 const defaultMainPageUrl = "https://www.lostfilm.win"
@@ -36,6 +37,7 @@ type RootElement struct {
 	EpisodeNameEn string    // Cutting Promos
 	Date          time.Time // 2021-09-07 00:00:00 +0000
 	order         int
+	Poster        string
 }
 
 type Episode struct {
@@ -82,10 +84,14 @@ func (c Client) GetRoot() ([]RootElement, error) {
 	rows := doc.Find(".row")
 	r := make([]RootElement, 0, 15)
 	parseRow := func(i int, row *goquery.Selection) {
-		link, found := row.Find("a").Eq(0).Attr("href")
-		if !found {
+		link, foundLink := row.Find("a").Eq(0).Attr("href")
+		if !foundLink {
 			log.Debug("Not found link")
 			return
+		}
+		posterLink, foundPoster := row.Find(".thumb").Eq(0).Attr("src")
+		if !foundPoster {
+			posterLink = ""
 		}
 		rawDate := strings.Replace(
 			row.Find(".alpha").Eq(1).Text(),
@@ -104,6 +110,7 @@ func (c Client) GetRoot() ([]RootElement, error) {
 			EpisodeNameEn: row.Find(".beta").Eq(0).Text(),
 			Date:          date,
 			order:         i,
+			Poster:        posterLink,
 		})
 	}
 	rows.Each(parseRow)

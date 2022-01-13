@@ -1,6 +1,8 @@
 package web
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/service/lostfilm"
@@ -71,11 +73,12 @@ func (c LostFilmController) rss() func(ctx *gin.Context) {
 						continue
 					}
 				}
+				description := fmt.Sprintf("%s\n<img src=\"%s\"/>", file.Description, episode.Poster)
 				rss.Channel.Items = append(rss.Channel.Items, RssChannelItem{
 					Title:        episode.Name + ". " + episode.EpisodeNameFull,
 					Link:         config.GetConfig().Web.Domain + "/dl/" + file.GridFsId.Hex(),
 					PubDate:      episode.Created.Format(dateLayout),
-					Description:  file.Description,
+					Description:  description,
 					OriginalDate: episode.Date.Format(dateLayout),
 					OriginalUrl:  episode.Page,
 					Uid:          episode.Id.Hex(),

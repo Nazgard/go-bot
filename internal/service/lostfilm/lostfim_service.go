@@ -3,14 +3,15 @@ package lostfilm
 import (
 	"bytes"
 	"context"
+	"io"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"io"
 	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/pkg/log"
 	"makarov.dev/bot/pkg/lostfilm"
-	"time"
 )
 
 type Bucket interface {
@@ -125,6 +126,7 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 			Date:            element.Date,
 			Created:         time.Now(),
 			ItemFiles:       itemFiles,
+			Poster:          element.Poster,
 		})
 		if err != nil {
 			log.Error("Error while save item", err.Error())

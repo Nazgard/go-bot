@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"makarov.dev/bot/pkg/log"
-	"time"
 )
 
 type Item struct {
@@ -19,6 +20,7 @@ type Item struct {
 	Date            time.Time          `bson:"date"`
 	Created         time.Time          `bson:"created"`
 	ItemFiles       []ItemFile         `bson:"item_files"`
+	Poster          string             `bson:"poster"`
 }
 
 type ItemFile struct {

@@ -34,13 +34,6 @@ func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-type ItemCheckerMock struct {
-}
-
-func (c ItemCheckerMock) Exists(uid string) bool {
-	return false
-}
-
 func TestGetRoot(t *testing.T) {
 	client := getClient()
 	r, err := client.GetRoot()

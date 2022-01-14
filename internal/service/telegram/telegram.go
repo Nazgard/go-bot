@@ -26,7 +26,7 @@ func NewTelegramService() *ServiceImpl {
 	return &ServiceImpl{}
 }
 
-func (s ServiceImpl) Init() {
+func (s *ServiceImpl) Init() {
 	cfg := config.GetConfig().Telegram
 	if !cfg.Enable {
 		return

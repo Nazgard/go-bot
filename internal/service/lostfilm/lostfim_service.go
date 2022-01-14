@@ -39,7 +39,7 @@ func NewLostFilmService(client *lostfilm.Client, repository repository.LostFilmR
 	}
 }
 
-func (s ServiceImpl) Init() {
+func (s *ServiceImpl) Init() {
 
 }
 

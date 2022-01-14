@@ -17,7 +17,7 @@ func NewTwitchService(repository *repository.TwitchChatRepository) *Service {
 	return &Service{Repository: repository}
 }
 
-func (s Service) Init() {
+func (s *Service) Init() {
 	cfg := config.GetConfig().Twitch
 	client := twitch.NewAnonymousClient()
 	log.Debug("Going to connect twitch channels", strings.Join(cfg.Channels, ", "))

@@ -26,7 +26,7 @@ func (c *FileController) Add(g *gin.RouterGroup) {
 // @Success 200 {file} file
 // @Failure 400,500 {object} HTTPError
 // @Router /dl/{fileId} [get]
-func (c FileController) downloadFile() func(ctx *gin.Context) {
+func (c *FileController) downloadFile() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		fileId := ctx.Param("fileId")
 		if fileId == "" {

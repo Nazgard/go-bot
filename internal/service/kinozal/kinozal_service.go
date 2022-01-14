@@ -24,7 +24,7 @@ func NewKinozalService(repository repository.KinozalRepository) *ServiceImpl {
 	return &ServiceImpl{Repository: repository}
 }
 
-func (s ServiceImpl) Init() {
+func (s *ServiceImpl) Init() {
 	go s.listenAddFavorite()
 	go s.listenDeleteFavorite()
 }

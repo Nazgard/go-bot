@@ -48,7 +48,7 @@ func (c *LostFilmController) Add(g *gin.RouterGroup) {
 // @Success 200 {object} Rss
 // @Failure 400,500 {object} HTTPError
 // @Router /lostfilm/rss [get]
-func (c LostFilmController) rss() func(ctx *gin.Context) {
+func (c *LostFilmController) rss() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		quality := ctx.Query("quality")
 		episodes, err := c.Service.LastEpisodes(ctx)

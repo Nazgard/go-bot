@@ -21,7 +21,7 @@ func (c *KinozalController) Add(g *gin.RouterGroup) {
 // @Success 200 {object} Rss
 // @Failure 400,500 {object} HTTPError
 // @Router /kinozal/rss [get]
-func (c KinozalController) rss() func(ctx *gin.Context) {
+func (c *KinozalController) rss() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		episodes, err := c.Service.LastKinozalEpisodes(ctx)
 		if err != nil {

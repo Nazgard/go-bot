@@ -25,7 +25,7 @@ func NewFileService(bucket Bucket, repository repository.FileRepository) *FileSe
 	return &FileServiceImpl{Bucket: bucket, Repository: repository}
 }
 
-func (s FileServiceImpl) Init() {
+func (s *FileServiceImpl) Init() {
 
 }
 

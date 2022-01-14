@@ -53,6 +53,11 @@ func TestGetRoot(t *testing.T) {
 	if len(r) != 15 {
 		t.Fatal("Incorrect len")
 	}
+	for _, e := range r {
+		if e.Poster == "" {
+			t.Fatal("Empty poster")
+		}
+	}
 }
 
 func TestGetEpisode(t *testing.T) {

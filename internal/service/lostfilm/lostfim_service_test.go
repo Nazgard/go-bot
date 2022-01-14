@@ -110,6 +110,7 @@ var fakeRootElement = lostfilm.RootElement{
 	EpisodeName:   "Рекламный ролик",
 	EpisodeNameEn: "Cutting Promos",
 	Date:          time.Now(),
+	Poster:        "//static.lostfilm.win/Images/611/Posters/image_s1.jpg",
 }
 
 func after() {
@@ -137,6 +138,9 @@ func TestService_storeElement(t *testing.T) {
 	service.StoreElement(fakeRootElement)
 	if len(items) != 1 {
 		t.Error("wrong len")
+	}
+	if items[0].Poster == "" {
+		t.Error("Empty poster")
 	}
 	after()
 }

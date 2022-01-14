@@ -41,7 +41,8 @@ type HTTPError struct {
 }
 
 func (reg *Registry) Init() {
-	cfg := config.GetConfig().Web
+	cfg := config.GetConfig()
+	webCfg := cfg.Web
 
 	docs.SwaggerInfo.BasePath = "/"
 
@@ -64,11 +65,13 @@ func (reg *Registry) Init() {
 		Output: gin.DefaultWriter,
 	})
 
-	gin.SetMode(cfg.Mode)
+	gin.SetMode(webCfg.Mode)
 	r := gin.New()
 	r.Use(logger, gin.Recovery())
 
-	pprof.Register(r, "dev/pprof")
+	if cfg.Debug {
+		pprof.Register(r, "dev/pprof")
+	}
 
 	lfGroup := r.Group("/lostfilm")
 	{
@@ -90,7 +93,7 @@ func (reg *Registry) Init() {
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	err := r.Run(cfg.Addr)
+	err := r.Run(webCfg.Addr)
 	if err != nil {
 		panic(err)
 	}

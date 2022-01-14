@@ -2,10 +2,11 @@ package config
 
 import (
 	"github.com/umputun/go-flags"
-	"os"
+	"log"
 )
 
 type Config struct {
+	Debug    bool     `long:"Debug" env:"DEBUG" description:"Debug mode (pprof enabled)"`
 	LostFilm LostFilm `group:"LostFilm" env-namespace:"LOSTFILM"`
 	Database Database `group:"Database" env-namespace:"DATABASE"`
 	Web      Web      `group:"Web" env-namespace:"WEB"`
@@ -56,7 +57,7 @@ var config = &Config{}
 
 func Init() {
 	if _, err := flags.Parse(config); err != nil {
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 

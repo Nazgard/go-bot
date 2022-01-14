@@ -21,17 +21,17 @@ type httpClientMock struct{}
 func (c *httpClientMock) Do(req *http.Request) (*http.Response, error) {
 	var file *os.File
 	if strings.HasPrefix(req.URL.Path, "/series") {
-		file, _ = os.Open("./episode_page.thtml")
+		file, _ = os.Open("../../../pkg/lostfilm/episode_page.thtml")
 	}
 	switch req.URL.Path {
 	case "/new":
-		file, _ = os.Open("./root_page.thtml")
+		file, _ = os.Open("../../../pkg/lostfilm/root_page.thtml")
 	case "/v_search.php":
-		file, _ = os.Open("./torrent_ref1.thtml")
+		file, _ = os.Open("../../../pkg/lostfilm/torrent_ref1.thtml")
 	case "/v3/index.php":
-		file, _ = os.Open("./torrent_ref2.thtml")
+		file, _ = os.Open("../../../pkg/lostfilm/torrent_ref2.thtml")
 	case "/td.php":
-		file, _ = os.Open("./Heels.S01E04.1080p.rus.LostFilm.TV.mkv.torrent")
+		file, _ = os.Open("../../../pkg/lostfilm/Heels.S01E04.1080p.rus.LostFilm.TV.mkv.torrent")
 	}
 	return &http.Response{
 		StatusCode: 200,

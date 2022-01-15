@@ -1,15 +1,16 @@
 package kinozal
 
 import (
-	"github.com/PuerkitoBio/goquery"
-	"golang.org/x/text/encoding/charmap"
 	"io"
 	"io/ioutil"
-	"makarov.dev/bot/pkg/log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/text/encoding/charmap"
+	"makarov.dev/bot/pkg/log"
 )
 
 const defaultMainPageUrl = "http://kinozal.tv"
@@ -110,6 +111,7 @@ func (c Client) Listing(ch chan int64, interval time.Duration) {
 	for {
 		ids, err := c.GetRoot()
 		if err != nil {
+			time.Sleep(interval)
 			continue
 		}
 		for _, element := range ids {

@@ -55,9 +55,10 @@ func Init() {
 
 	//region web
 	wr := web.Registry{
-		FileService: fileService,
-		LFService:   lfService,
-		KZService:   kzService,
+		FileService:     fileService,
+		LFService:       lfService,
+		KZService:       kzService,
+		TwichRepository: twitchChatRepository,
 	}
 	go wr.Init()
 	//endregion

@@ -1,12 +1,13 @@
 package twitch
 
 import (
+	"strings"
+	"time"
+
 	"github.com/gempir/go-twitch-irc/v2"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/pkg/log"
-	"strings"
-	"time"
 )
 
 type Service struct {
@@ -22,7 +23,6 @@ func (s *Service) Init() {
 	client := twitch.NewAnonymousClient()
 	log.Debug("Going to connect twitch channels", strings.Join(cfg.Channels, ", "))
 	client.Join(cfg.Channels...)
-
 	client.OnConnect(func() {
 		log.Debug("Twitch connected")
 	})

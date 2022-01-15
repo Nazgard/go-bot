@@ -2,17 +2,19 @@ package web
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"makarov.dev/bot/docs"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/internal/service"
 	"makarov.dev/bot/internal/service/kinozal"
 	"makarov.dev/bot/internal/service/lostfilm"
 	"makarov.dev/bot/pkg/log"
-	"time"
 )
 
 type Controller interface {
@@ -20,9 +22,10 @@ type Controller interface {
 }
 
 type Registry struct {
-	FileService service.FileService
-	LFService   lostfilm.Service
-	KZService   kinozal.Service
+	FileService     service.FileService
+	LFService       lostfilm.Service
+	KZService       kinozal.Service
+	TwichRepository *repository.TwitchChatRepository
 }
 
 // NewError example
@@ -89,6 +92,12 @@ func (reg *Registry) Init() {
 	{
 		ctr := FileController{FileService: reg.FileService}
 		go ctr.Add(fileGroup)
+	}
+
+	twichGroup := r.Group("/twich")
+	{
+		ctr := TwichController{Repository: reg.TwichRepository}
+		go ctr.Add(twichGroup)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

@@ -2,10 +2,14 @@ package repository
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/gempir/go-twitch-irc/v2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type TwitchChatMessage struct {
@@ -60,4 +64,28 @@ func (r *TwitchChatRepository) getCollection() *mongo.Collection {
 
 func (r *TwitchChatRepository) getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 10*time.Second)
+}
+
+func (r *TwitchChatRepository) GetLastMessages(channel string, limit string) ([]TwitchChatMessage, error) {
+	collection := r.getCollection()
+	ctx, cancel := r.getContext()
+	defer cancel()
+	limitIn, err := strconv.ParseInt(limit, 10, 64)
+	if err != nil {
+		limitIn = 100
+	}
+	filter := bson.D{}
+	if len(channel) > 0 {
+		filter = bson.D{{Key: "channel", Value: channel}}
+	}
+	cursor, err := collection.Find(ctx, filter, &options.FindOptions{Sort: bson.D{{Key: "_id", Value: -1}}, Limit: &limitIn})
+	if err != nil {
+		return nil, err
+	}
+	arr1 := make([]TwitchChatMessage, 0)
+	err = cursor.All(ctx, &arr1)
+	if err != nil {
+		return nil, err
+	}
+	return arr1, nil
 }

@@ -17,6 +17,7 @@ type Config struct {
 }
 
 type LostFilm struct {
+	Enable     bool   `long:"lostfilm-enable" env:"ENABLE" description:"LostFilm integration toggle"`
 	Domain     string `long:"lostfilm-domain" env:"DOMAIN" default:"https://www.lostfilm.win" description:"LostFilm domain"`
 	CookieName string `long:"cookie-name" env:"COOKIE_NAME" required:"true" description:"LostFilm cookie name"`
 	CookieVal  string `long:"cookie-val" env:"COOKIE_VAL" required:"true" description:"LostFilm cookie val"`
@@ -49,6 +50,7 @@ type Twitch struct {
 }
 
 type Kinozal struct {
+	Enable bool   `long:"kinozal-enable" env:"ENABLE" description:"Kinozal integration toggle"`
 	Domain string `long:"kinozal-domain" env:"DOMAIN" default:"http://kinozal.tv" description:"Kinozal domain"`
 	Cookie string `long:"kinozal-cookie" env:"COOKIE" required:"true" description:"Kinozal cookie"`
 }

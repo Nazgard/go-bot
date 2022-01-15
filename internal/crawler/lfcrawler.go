@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/service/lostfilm"
 	"makarov.dev/bot/pkg/log"
 	lfClient "makarov.dev/bot/pkg/lostfilm"
@@ -20,6 +21,10 @@ func NewLostFilmCrawler(service lostfilm.Service, client *lfClient.Client) *Lost
 }
 
 func (c *LostFilmCrawler) Start() {
+	if !config.GetConfig().LostFilm.Enable {
+		log.Info("LostFilm integration disabled")
+		return
+	}
 	ch := make(chan lfClient.RootElement)
 	go c.Client.Listing(ch, time.Minute)
 	for element := range ch {

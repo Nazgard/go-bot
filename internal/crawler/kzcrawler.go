@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
+	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/internal/service/kinozal"
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
@@ -27,6 +28,10 @@ func NewKinozalCrawler(service kinozal.Service, client *kinozalClient.Client, bu
 }
 
 func (c *KinozalCrawler) Start() {
+	if !config.GetConfig().Kinozal.Enable {
+		log.Info("Kinozal integration disabled")
+		return
+	}
 	ch := make(chan int64)
 	go c.Client.Listing(ch, time.Minute)
 	for id := range ch {

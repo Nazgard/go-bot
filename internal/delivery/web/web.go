@@ -22,10 +22,10 @@ type Controller interface {
 }
 
 type Registry struct {
-	FileService     service.FileService
-	LFService       lostfilm.Service
-	KZService       kinozal.Service
-	TwichRepository *repository.TwitchChatRepository
+	FileService      service.FileService
+	LFService        lostfilm.Service
+	KZService        kinozal.Service
+	TwitchRepository *repository.TwitchChatRepository
 }
 
 // NewError example
@@ -94,10 +94,10 @@ func (reg *Registry) Init() {
 		go ctr.Add(fileGroup)
 	}
 
-	twichGroup := r.Group("/twich")
+	twitchGroup := r.Group("/twitch")
 	{
-		ctr := TwichController{Repository: reg.TwichRepository}
-		go ctr.Add(twichGroup)
+		ctr := TwitchController{Repository: reg.TwitchRepository}
+		go ctr.Add(twitchGroup)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

@@ -5,11 +5,11 @@ import (
 	"makarov.dev/bot/internal/repository"
 )
 
-type TwichController struct {
+type TwitchController struct {
 	Repository *repository.TwitchChatRepository
 }
 
-func (c *TwichController) Add(g *gin.RouterGroup) {
+func (c *TwitchController) Add(g *gin.RouterGroup) {
 	g.GET("/messages", func(ctx *gin.Context) {
 
 		data, err := c.Repository.GetLastMessages(ctx.Query("channel"), ctx.Query("limit"))

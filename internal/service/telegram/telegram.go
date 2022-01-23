@@ -9,7 +9,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/service/kinozal"
-	"makarov.dev/bot/pkg/log"
 )
 
 const dateParseLayout = "2006-01-02"
@@ -26,28 +25,44 @@ func NewTelegramService() *ServiceImpl {
 	return &ServiceImpl{}
 }
 
+type telegramLogger struct {
+}
+
+func (t *telegramLogger) Println(v ...interface{}) {
+	config.GetLogger().Println(v)
+}
+
+func (t *telegramLogger) Printf(format string, v ...interface{}) {
+	config.GetLogger().Printf(format, v)
+}
+
 func (s *ServiceImpl) Init() {
+	log := config.GetLogger()
 	cfg := config.GetConfig().Telegram
 	if !cfg.Enable {
 		return
 	}
 	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
-		log.Error("Error while connect to telegram", err.Error(), "retrying in 15 sec")
+		log.Error("Error while connect to telegram ", err.Error(), " retrying in 15 sec")
 		time.Sleep(15 * time.Second)
 		s.Init()
+	}
+	err = tgbotapi.SetLogger(&telegramLogger{})
+	if err != nil {
+		log.Error(err)
 	}
 
 	bot.Debug = cfg.Debug
 
-	log.Info("Authorized on telegram account", bot.Self.UserName)
+	log.Info("Authorized on telegram account ", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
-		log.Error("Error while get telegram updates", err.Error())
+		log.Error("Error while get telegram updates", err)
 	}
 
 	for update := range updates {

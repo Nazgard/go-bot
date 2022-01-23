@@ -1,12 +1,15 @@
 package config
 
 import (
+	"github.com/Nazgard/logruzio"
+	nested "github.com/antonfisher/nested-logrus-formatter"
+	log "github.com/sirupsen/logrus"
 	"github.com/umputun/go-flags"
-	"log"
 )
 
 type Config struct {
 	Debug    bool     `long:"Debug" env:"DEBUG" description:"Debug mode (pprof enabled)"`
+	LogLevel string   `long:"Log level" env:"LOG_LEVEL" default:"DEBUG" description:"Log level"`
 	LostFilm LostFilm `group:"LostFilm" env-namespace:"LOSTFILM"`
 	Database Database `group:"Database" env-namespace:"DATABASE"`
 	Web      Web      `group:"Web" env-namespace:"WEB"`
@@ -35,8 +38,8 @@ type Web struct {
 }
 
 type Logzio struct {
-	Enable bool   `long:"logzio-enable" env:"ENABLE" description:"Logzio log send enabled"`
-	Token  string `long:"logzio-token" env:"TOKEN" description:"Logzio token"`
+	Host  string `long:"logzio-host" env:"HOST" default:"https://listener-eu.logz.io:8071" description:"Logzio token"`
+	Token string `long:"logzio-token" env:"TOKEN" description:"Logzio token"`
 }
 
 type Telegram struct {
@@ -57,9 +60,24 @@ type Kinozal struct {
 
 var config = &Config{}
 
-func Init() {
+func Init(logger *log.Logger) {
 	if _, err := flags.Parse(config); err != nil {
+		logger.Fatal(err)
+	}
+	baseLogger = logger
+	logLevel, err := log.ParseLevel(config.LogLevel)
+	if err != nil {
 		log.Fatal(err)
+	}
+	baseLogger.SetLevel(logLevel)
+	logger.SetFormatter(&nested.Formatter{})
+	if config.Debug {
+	} else {
+		hook, err := logruzio.New(config.Logzio.Host, config.Logzio.Token, "Bot", log.Fields{})
+		if err != nil {
+			log.Fatal(err)
+		}
+		logger.AddHook(hook)
 	}
 }
 

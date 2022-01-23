@@ -3,6 +3,7 @@ package kinozal
 import (
 	"io"
 	"io/ioutil"
+	"makarov.dev/bot/internal/config"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/text/encoding/charmap"
-	"makarov.dev/bot/pkg/log"
 )
 
 const defaultMainPageUrl = "http://kinozal.tv"
@@ -122,6 +122,7 @@ func (c Client) Listing(ch chan int64, interval time.Duration) {
 }
 
 func (c Client) getDoc(url string) (*goquery.Document, error) {
+	log := config.GetLogger()
 	body, err := c.getRequest(url)
 	if err != nil {
 		log.Error(err.Error())
@@ -138,6 +139,7 @@ func (c Client) getDoc(url string) (*goquery.Document, error) {
 }
 
 func (c Client) getRequest(url string) (io.ReadCloser, error) {
+	log := config.GetLogger()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Error(err.Error())
@@ -148,7 +150,7 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 
 	res, err := c.Config.HttpClient.Do(req)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return nil, err
 	}
 

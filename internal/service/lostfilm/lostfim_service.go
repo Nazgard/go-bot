@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"makarov.dev/bot/internal/config"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"makarov.dev/bot/internal/repository"
-	"makarov.dev/bot/pkg/log"
 	"makarov.dev/bot/pkg/lostfilm"
 )
 
@@ -48,6 +48,7 @@ func (s *ServiceImpl) LastEpisodes(ctx context.Context) ([]repository.Item, erro
 }
 
 func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
+	log := config.GetLogger()
 	oldItem, err := s.Repository.GetByPage(element.Page)
 	if err != nil && err != mongo.ErrNoDocuments {
 		log.Error("Error while get item by page", element.Page)

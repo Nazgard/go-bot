@@ -4,13 +4,13 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"makarov.dev/bot/internal/config"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"makarov.dev/bot/pkg/log"
 )
 
 const defaultMainPageUrl = "https://www.lostfilm.win"
@@ -76,6 +76,7 @@ func NewClient(cookieName, cookieVal string) *Client {
 }
 
 func (c Client) GetRoot() ([]RootElement, error) {
+	log := config.GetLogger()
 	doc, err := c.getDoc(c.getMainPageUrl() + "/new")
 	if err != nil {
 		log.Error(err.Error())
@@ -119,6 +120,7 @@ func (c Client) GetRoot() ([]RootElement, error) {
 }
 
 func (c Client) GetEpisode(page string) (*Episode, error) {
+	log := config.GetLogger()
 	doc, err := c.getDoc(c.getMainPageUrl() + page)
 	if err != nil {
 		log.Error(err.Error())
@@ -140,6 +142,7 @@ func (c Client) GetEpisode(page string) (*Episode, error) {
 }
 
 func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
+	log := config.GetLogger()
 	doc, err := c.getDoc(c.getMainPageUrl() + "/v_search.php?a=" + strconv.FormatInt(episodeId, 10))
 	if err != nil {
 		log.Error(err.Error())
@@ -179,6 +182,7 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 }
 
 func (c Client) GetTorrent(url string) ([]byte, error) {
+	log := config.GetLogger()
 	body, err := c.getRequest(url)
 	if err != nil {
 		log.Error(err.Error())
@@ -205,6 +209,7 @@ func (c Client) getMainPageUrl() string {
 }
 
 func (c Client) getRequest(url string) (io.ReadCloser, error) {
+	log := config.GetLogger()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Error(err.Error())
@@ -223,6 +228,7 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 }
 
 func (c Client) getDoc(url string) (*goquery.Document, error) {
+	log := config.GetLogger()
 	body, err := c.getRequest(url)
 	if err != nil {
 		log.Error(err.Error())

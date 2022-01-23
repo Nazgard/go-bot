@@ -1,7 +1,7 @@
 package service
 
 import (
-	"makarov.dev/bot/pkg/log"
+	"makarov.dev/bot/internal/config"
 	"time"
 )
 
@@ -13,6 +13,7 @@ func NewHealthService() *HealthService {
 }
 
 func (s *HealthService) Init() {
+	log := config.GetLogger()
 	for {
 		log.Debug("Health ok")
 		time.Sleep(1 * time.Hour)

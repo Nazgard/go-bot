@@ -1,13 +1,13 @@
 package twitch
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/gempir/go-twitch-irc/v2"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
-	"makarov.dev/bot/pkg/log"
 )
 
 type Service struct {
@@ -19,6 +19,7 @@ func NewTwitchService(repository *repository.TwitchChatRepository) *Service {
 }
 
 func (s *Service) Init() {
+	log := config.GetLogger()
 	cfg := config.GetConfig().Twitch
 	client := twitch.NewAnonymousClient()
 	log.Debug("Going to connect twitch channels", strings.Join(cfg.Channels, ", "))
@@ -28,6 +29,12 @@ func (s *Service) Init() {
 	})
 
 	client.OnPrivateMessage(func(message twitch.PrivateMessage) {
+		log.Trace(fmt.Sprintf(
+			"Received twitch message [%s] %s: %s",
+			message.Channel,
+			message.User.Name,
+			message.Message,
+		))
 		go func() {
 			err := s.Repository.Insert(message)
 			if err != nil {

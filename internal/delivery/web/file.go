@@ -3,12 +3,12 @@ package web
 import (
 	"errors"
 	"fmt"
+	"makarov.dev/bot/internal/config"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"makarov.dev/bot/internal/service"
-	"makarov.dev/bot/pkg/log"
 )
 
 type FileController struct {
@@ -27,6 +27,7 @@ func (c *FileController) Add(g *gin.RouterGroup) {
 // @Failure 400,500 {object} HTTPError
 // @Router /dl/{fileId} [get]
 func (c *FileController) downloadFile() func(ctx *gin.Context) {
+	log := config.GetLogger()
 	return func(ctx *gin.Context) {
 		fileId := ctx.Param("fileId")
 		if fileId == "" {

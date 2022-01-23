@@ -1,12 +1,15 @@
 package config
 
 import (
+	"github.com/Nazgard/logruzio"
+	nested "github.com/antonfisher/nested-logrus-formatter"
+	log "github.com/sirupsen/logrus"
 	"github.com/umputun/go-flags"
-	"log"
 )
 
 type Config struct {
 	Debug    bool     `long:"Debug" env:"DEBUG" description:"Debug mode (pprof enabled)"`
+	LogLevel string   `long:"Log level" env:"LOG_LEVEL" default:"DEBUG" description:"Log level"`
 	LostFilm LostFilm `group:"LostFilm" env-namespace:"LOSTFILM"`
 	Database Database `group:"Database" env-namespace:"DATABASE"`
 	Web      Web      `group:"Web" env-namespace:"WEB"`
@@ -17,6 +20,7 @@ type Config struct {
 }
 
 type LostFilm struct {
+	Enable     bool   `long:"lostfilm-enable" env:"ENABLE" description:"LostFilm integration toggle"`
 	Domain     string `long:"lostfilm-domain" env:"DOMAIN" default:"https://www.lostfilm.win" description:"LostFilm domain"`
 	CookieName string `long:"cookie-name" env:"COOKIE_NAME" required:"true" description:"LostFilm cookie name"`
 	CookieVal  string `long:"cookie-val" env:"COOKIE_VAL" required:"true" description:"LostFilm cookie val"`
@@ -34,8 +38,8 @@ type Web struct {
 }
 
 type Logzio struct {
-	Enable bool   `long:"logzio-enable" env:"ENABLE" description:"Logzio log send enabled"`
-	Token  string `long:"logzio-token" env:"TOKEN" description:"Logzio token"`
+	Host  string `long:"logzio-host" env:"HOST" default:"https://listener-eu.logz.io:8071" description:"Logzio token"`
+	Token string `long:"logzio-token" env:"TOKEN" description:"Logzio token"`
 }
 
 type Telegram struct {
@@ -49,15 +53,30 @@ type Twitch struct {
 }
 
 type Kinozal struct {
+	Enable bool   `long:"kinozal-enable" env:"ENABLE" description:"Kinozal integration toggle"`
 	Domain string `long:"kinozal-domain" env:"DOMAIN" default:"http://kinozal.tv" description:"Kinozal domain"`
 	Cookie string `long:"kinozal-cookie" env:"COOKIE" required:"true" description:"Kinozal cookie"`
 }
 
 var config = &Config{}
 
-func Init() {
+func Init(logger *log.Logger) {
 	if _, err := flags.Parse(config); err != nil {
+		logger.Fatal(err)
+	}
+	baseLogger = logger
+	logLevel, err := log.ParseLevel(config.LogLevel)
+	if err != nil {
 		log.Fatal(err)
+	}
+	baseLogger.SetLevel(logLevel)
+	logger.SetFormatter(&nested.Formatter{})
+	if !config.Debug {
+		hook, err := logruzio.New(config.Logzio.Host, config.Logzio.Token, "Bot", log.Fields{})
+		if err != nil {
+			log.Fatal(err)
+		}
+		logger.AddHook(hook)
 	}
 }
 

@@ -1,6 +1,7 @@
 package app
 
 import (
+	log "github.com/sirupsen/logrus"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/crawler"
 	"makarov.dev/bot/internal/delivery/web"
@@ -11,13 +12,13 @@ import (
 	"makarov.dev/bot/internal/service/telegram"
 	"makarov.dev/bot/internal/service/twitch"
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
-	"makarov.dev/bot/pkg/log"
 	lostfilmClient "makarov.dev/bot/pkg/lostfilm"
 )
 
 func Init() {
-	config.Init()
-	log.Init()
+	logger := log.New()
+	config.Init(logger)
+	cfg := config.GetConfig()
 
 	//region db
 	db := repository.NewDatabase()
@@ -30,9 +31,9 @@ func Init() {
 	//endregion
 
 	//region services
-	lfCfg := config.GetConfig().LostFilm
+	lfCfg := cfg.LostFilm
 	lfClient := lostfilmClient.NewClient(lfCfg.CookieName, lfCfg.CookieVal)
-	kzClient := kinozalClient.NewClient(config.GetConfig().Kinozal.Cookie)
+	kzClient := kinozalClient.NewClient(cfg.Kinozal.Cookie)
 	lfService := lostfilm.NewLostFilmService(lfClient, lfRepository, bucket)
 	kzService := kinozal.NewKinozalService(kzRepository)
 	telegramService := telegram.NewTelegramService()
@@ -55,10 +56,10 @@ func Init() {
 
 	//region web
 	wr := web.Registry{
-		FileService:     fileService,
-		LFService:       lfService,
-		KZService:       kzService,
-		TwichRepository: twitchChatRepository,
+		FileService:      fileService,
+		LFService:        lfService,
+		KZService:        kzService,
+		TwitchRepository: twitchChatRepository,
 	}
 	go wr.Init()
 	//endregion

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"makarov.dev/bot/pkg/log"
+	"makarov.dev/bot/internal/config"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -31,6 +31,7 @@ func NewFileRepository(database *mongo.Database) *FileRepositoryImpl {
 }
 
 func (f *FileRepositoryImpl) Log(ctx *gin.Context, fileId primitive.ObjectID) error {
+	log := config.GetLogger()
 	collection := f.getCollection()
 	entry := FileDownloadEntry{
 		Id:         primitive.NewObjectID(),

@@ -14,7 +14,6 @@ import (
 	"makarov.dev/bot/internal/service"
 	"makarov.dev/bot/internal/service/kinozal"
 	"makarov.dev/bot/internal/service/lostfilm"
-	"makarov.dev/bot/pkg/log"
 )
 
 type Controller interface {
@@ -22,10 +21,10 @@ type Controller interface {
 }
 
 type Registry struct {
-	FileService     service.FileService
-	LFService       lostfilm.Service
-	KZService       kinozal.Service
-	TwichRepository *repository.TwitchChatRepository
+	FileService      service.FileService
+	LFService        lostfilm.Service
+	KZService        kinozal.Service
+	TwitchRepository *repository.TwitchChatRepository
 }
 
 // NewError example
@@ -46,10 +45,11 @@ type HTTPError struct {
 func (reg *Registry) Init() {
 	cfg := config.GetConfig()
 	webCfg := cfg.Web
+	log := config.GetLogger()
 
 	docs.SwaggerInfo.BasePath = "/"
 
-	w := &log.Writer{}
+	w := log.Writer()
 	gin.DefaultErrorWriter = w
 	gin.DefaultWriter = w
 	logger := gin.LoggerWithConfig(gin.LoggerConfig{
@@ -85,19 +85,19 @@ func (reg *Registry) Init() {
 	kinozalGroup := r.Group("/kinozal")
 	{
 		ctr := KinozalController{Service: reg.KZService}
-		go ctr.Add(kinozalGroup)
+		ctr.Add(kinozalGroup)
 	}
 
 	fileGroup := r.Group("/dl")
 	{
 		ctr := FileController{FileService: reg.FileService}
-		go ctr.Add(fileGroup)
+		ctr.Add(fileGroup)
 	}
 
-	twichGroup := r.Group("/twich")
+	twitchGroup := r.Group("/twitch")
 	{
-		ctr := TwichController{Repository: reg.TwichRepository}
-		go ctr.Add(twichGroup)
+		ctr := TwitchController{Repository: reg.TwitchRepository}
+		ctr.Add(twitchGroup)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

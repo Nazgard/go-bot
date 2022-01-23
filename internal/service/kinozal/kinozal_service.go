@@ -2,8 +2,8 @@ package kinozal
 
 import (
 	"context"
+	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
-	"makarov.dev/bot/pkg/log"
 )
 
 var AddFavoriteCh = make(chan int64)
@@ -30,19 +30,21 @@ func (s *ServiceImpl) Init() {
 }
 
 func (s *ServiceImpl) listenAddFavorite() {
+	log := config.GetLogger()
 	for id := range AddFavoriteCh {
 		err := s.Repository.InsertFavorite(id)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 	}
 }
 
 func (s *ServiceImpl) listenDeleteFavorite() {
+	log := config.GetLogger()
 	for id := range DeleteFavoriteCh {
 		err := s.Repository.DeleteFavorite(id)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error(err)
 		}
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"makarov.dev/bot/pkg/log"
+	"makarov.dev/bot/internal/config"
 	"time"
 )
 
@@ -108,6 +108,7 @@ func (r *KinozalRepositoryImpl) DeleteFavorite(detailId int64) error {
 }
 
 func (r *KinozalRepositoryImpl) LastEpisodes(ctx context.Context) ([]KinozalItem, error) {
+	log := config.GetLogger()
 	limit := int64(50)
 	cursor, err := r.getItemsCollection().Find(ctx, bson.D{}, &options.FindOptions{
 		Sort:  bson.D{{"created", -1}},

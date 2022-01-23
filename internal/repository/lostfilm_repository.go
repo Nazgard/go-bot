@@ -2,13 +2,13 @@ package repository
 
 import (
 	"context"
+	"makarov.dev/bot/internal/config"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"makarov.dev/bot/pkg/log"
 )
 
 type Item struct {
@@ -46,6 +46,7 @@ func NewLostFilmRepository(database *mongo.Database) *LostFilmRepositoryImpl {
 }
 
 func (r *LostFilmRepositoryImpl) FindLatest(ctx context.Context) ([]Item, error) {
+	log := config.GetLogger()
 	limit := int64(50)
 	cursor, err := r.getCollection().Find(ctx, bson.D{}, &options.FindOptions{
 		Sort:  bson.D{{"date", -1}, {"created", -1}},

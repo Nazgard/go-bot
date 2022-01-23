@@ -29,11 +29,11 @@ type telegramLogger struct {
 }
 
 func (t *telegramLogger) Println(v ...interface{}) {
-	config.GetLogger().Println(v)
+	config.GetLogger().Debug(v...)
 }
 
 func (t *telegramLogger) Printf(format string, v ...interface{}) {
-	config.GetLogger().Printf(format, v)
+	config.GetLogger().Debug(v...)
 }
 
 func (s *ServiceImpl) Init() {

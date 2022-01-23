@@ -71,8 +71,7 @@ func Init(logger *log.Logger) {
 	}
 	baseLogger.SetLevel(logLevel)
 	logger.SetFormatter(&nested.Formatter{})
-	if config.Debug {
-	} else {
+	if !config.Debug {
 		hook, err := logruzio.New(config.Logzio.Host, config.Logzio.Token, "Bot", log.Fields{})
 		if err != nil {
 			log.Fatal(err)

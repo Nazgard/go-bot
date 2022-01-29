@@ -2,8 +2,7 @@ package repository
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
-	"makarov.dev/bot/internal/config"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +30,7 @@ type TwitchChatUser struct {
 }
 
 type TushqaQuote struct {
-	Id      primitive.ObjectID `bson:"id" json:"id"`
+	Id      primitive.ObjectID `bson:"_id" json:"id"`
 	Channel string             `bson:"channel" json:"channel"`
 	Message string             `bson:"message" json:"message"`
 	Created time.Time          `bson:"created" json:"created"`
@@ -41,12 +40,7 @@ type TwitchChatRepository struct {
 	Database *mongo.Database
 }
 
-var tushqaUserIds = make(map[string]interface{}, 0)
-
 func NewTwitchChatRepository(database *mongo.Database) *TwitchChatRepository {
-	for _, tushqaUserId := range config.GetConfig().Twitch.TushqaUserIds {
-		tushqaUserIds[tushqaUserId] = nil
-	}
 	return &TwitchChatRepository{Database: database}
 }
 
@@ -54,7 +48,6 @@ func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
-	message := strings.TrimSpace(m.Message)
 	_, err := r.getMessageCollection().InsertOne(ctx, TwitchChatMessage{
 		Id:      primitive.NewObjectID(),
 		Channel: m.Channel,
@@ -62,7 +55,7 @@ func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 			Id:   m.User.ID,
 			Name: m.User.Name,
 		},
-		Message:      message,
+		Message:      strings.TrimSpace(m.Message),
 		Raw:          m.Raw,
 		Created:      time.Now(),
 		OriginalTime: m.Time,
@@ -71,40 +64,39 @@ func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 		return err
 	}
 
-	go func() {
-		_, isTushqaUser := tushqaUserIds[m.User.ID]
-		if isTushqaUser {
-			tushqaQuoteCollection := r.getTushqaQuoteCollection()
-			limit := int64(1)
-			count, err := tushqaQuoteCollection.CountDocuments(
-				ctx,
-				bson.M{"$regex": primitive.Regex{Pattern: message, Options: "i"}},
-				&options.CountOptions{Limit: &limit},
-			)
-			if err != nil {
-				log.Error("Error while check existed Tushqa quote", err)
-				return
-			}
-			if count > 0 {
-				return
-			}
-			_, err = tushqaQuoteCollection.InsertOne(ctx, TushqaQuote{
-				Id:      primitive.NewObjectID(),
-				Channel: m.Channel,
-				Message: message,
-				Created: time.Now(),
-			})
-			if err != nil {
-				log.Error("Error while save Tushqa quote", err)
-			}
-		}
-	}()
-
 	return nil
 }
 
-func (r *TwitchChatRepository) getMessageCollection() *mongo.Collection {
-	return r.Database.Collection("twitch_chat_messages")
+func (r *TwitchChatRepository) TushqaQuoteExists(message string) (bool, error) {
+	ctx, cancel := r.getContext()
+	defer cancel()
+	tushqaQuoteCollection := r.getTushqaQuoteCollection()
+	limit := int64(1)
+	count, err := tushqaQuoteCollection.CountDocuments(
+		ctx,
+		bson.M{"message": fmt.Sprintf("/^%s$/i", message)},
+		&options.CountOptions{Limit: &limit},
+	)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *TwitchChatRepository) InsertTushqaQuote(m twitch.PrivateMessage) error {
+	ctx, cancel := r.getContext()
+	defer cancel()
+	tushqaQuoteCollection := r.getTushqaQuoteCollection()
+	_, err := tushqaQuoteCollection.InsertOne(ctx, TushqaQuote{
+		Id:      primitive.NewObjectID(),
+		Channel: m.Channel,
+		Message: strings.TrimSpace(m.Message),
+		Created: time.Now(),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *TwitchChatRepository) GetLastMessages(channel string, limit string) ([]TwitchChatMessage, error) {
@@ -131,7 +123,7 @@ func (r *TwitchChatRepository) GetLastMessages(channel string, limit string) ([]
 	return result, nil
 }
 
-func (r TwitchChatRepository) GetTushqaQuotes(limit string) ([]TushqaQuote, error) {
+func (r *TwitchChatRepository) GetTushqaQuotes(limit string) ([]TushqaQuote, error) {
 	collection := r.getTushqaQuoteCollection()
 	ctx, cancel := r.getContext()
 	defer cancel()
@@ -154,6 +146,10 @@ func (r TwitchChatRepository) GetTushqaQuotes(limit string) ([]TushqaQuote, erro
 		return nil, err
 	}
 	return result, nil
+}
+
+func (r *TwitchChatRepository) getMessageCollection() *mongo.Collection {
+	return r.Database.Collection("twitch_chat_messages")
 }
 
 func (r *TwitchChatRepository) getTushqaQuoteCollection() *mongo.Collection {

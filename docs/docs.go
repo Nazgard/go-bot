@@ -132,9 +132,93 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/twitch/messages": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Twitch controller"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Channel filter",
+                        "name": "channel",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Message list limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repository.TwitchChatMessage"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.HTTPError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "repository.TwitchChatMessage": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "created": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "originalTime": {
+                    "type": "string"
+                },
+                "raw": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/repository.TwitchChatUser"
+                }
+            }
+        },
+        "repository.TwitchChatUser": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "web.HTTPError": {
             "type": "object",
             "properties": {

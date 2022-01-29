@@ -1,4 +1,28 @@
 definitions:
+  repository.TwitchChatMessage:
+    properties:
+      channel:
+        type: string
+      created:
+        type: string
+      id:
+        type: string
+      message:
+        type: string
+      originalTime:
+        type: string
+      raw:
+        type: string
+      user:
+        $ref: '#/definitions/repository.TwitchChatUser'
+    type: object
+  repository.TwitchChatUser:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
   web.HTTPError:
     properties:
       code:
@@ -121,4 +145,34 @@ paths:
             $ref: '#/definitions/web.HTTPError'
       tags:
       - LostFilm controller
+  /twitch/messages:
+    get:
+      parameters:
+      - description: Channel filter
+        in: query
+        name: channel
+        type: string
+      - description: Message list limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.TwitchChatMessage'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.HTTPError'
+      tags:
+      - Twitch controller
 swagger: "2.0"

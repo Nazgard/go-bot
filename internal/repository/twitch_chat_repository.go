@@ -13,18 +13,18 @@ import (
 )
 
 type TwitchChatMessage struct {
-	Id           primitive.ObjectID `bson:"_id"`
-	Channel      string             `bson:"channel"`
-	User         TwitchChatUser     `bson:"user"`
-	Message      string             `bson:"message"`
-	Raw          string             `bson:"raw"`
-	Created      time.Time          `bson:"created"`
-	OriginalTime time.Time          `bson:"original_time"`
+	Id           primitive.ObjectID `bson:"_id" json:"id"`
+	Channel      string             `bson:"channel" json:"channel"`
+	User         TwitchChatUser     `bson:"user" json:"user"`
+	Message      string             `bson:"message" json:"message"`
+	Raw          string             `bson:"raw" json:"raw"`
+	Created      time.Time          `bson:"created" json:"created"`
+	OriginalTime time.Time          `bson:"original_time" json:"originalTime"`
 }
 
 type TwitchChatUser struct {
-	Id   string `bson:"id"`
-	Name string `bson:"name"`
+	Id   string `bson:"id" json:"id"`
+	Name string `bson:"name" json:"name"`
 }
 
 type TwitchChatRepository struct {

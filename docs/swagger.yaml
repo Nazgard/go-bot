@@ -1,4 +1,15 @@
 definitions:
+  repository.TushqaQuote:
+    properties:
+      channel:
+        type: string
+      created:
+        type: string
+      id:
+        type: string
+      message:
+        type: string
+    type: object
   repository.TwitchChatMessage:
     properties:
       channel:
@@ -154,6 +165,7 @@ paths:
         type: string
       - description: Message list limit
         in: query
+        maximum: 100
         name: limit
         type: integer
       produces:
@@ -164,6 +176,33 @@ paths:
           schema:
             items:
               $ref: '#/definitions/repository.TwitchChatMessage'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/web.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/web.HTTPError'
+      tags:
+      - Twitch controller
+  /twitch/tushqa:
+    get:
+      parameters:
+      - description: Quotes limit
+        in: query
+        maximum: 100
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.TushqaQuote'
             type: array
         "400":
           description: Bad Request

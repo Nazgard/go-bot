@@ -149,6 +149,7 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "maximum": 100,
                         "type": "integer",
                         "description": "Message list limit",
                         "name": "limit",
@@ -179,9 +180,68 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/twitch/tushqa": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Twitch controller"
+                ],
+                "parameters": [
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "description": "Quotes limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/repository.TushqaQuote"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/web.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/web.HTTPError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "repository.TushqaQuote": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "created": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "repository.TwitchChatMessage": {
             "type": "object",
             "properties": {

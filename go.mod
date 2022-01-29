@@ -3,7 +3,7 @@ module makarov.dev/bot
 go 1.17
 
 require (
-	github.com/Nazgard/logruzio v0.0.0-20220122235709-03373a5aebfe
+	github.com/Nazgard/logruzio v0.0.0-20220129210513-edc31b132b6f
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/gempir/go-twitch-irc/v2 v2.8.1
@@ -61,7 +61,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
 	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
+	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
 	golang.org/x/tools v0.1.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

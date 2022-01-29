@@ -14,6 +14,8 @@ type Service struct {
 	Repository *repository.TwitchChatRepository
 }
 
+var tushqaUserIds = make(map[string]interface{}, 0)
+
 func NewTwitchService(repository *repository.TwitchChatRepository) *Service {
 	return &Service{Repository: repository}
 }
@@ -21,27 +23,17 @@ func NewTwitchService(repository *repository.TwitchChatRepository) *Service {
 func (s *Service) Init() {
 	log := config.GetLogger()
 	cfg := config.GetConfig().Twitch
+	for _, tushqaUserId := range cfg.TushqaUserIds {
+		tushqaUserIds[tushqaUserId] = nil
+	}
 	client := twitch.NewAnonymousClient()
-	log.Debug("Going to connect twitch channels", strings.Join(cfg.Channels, ", "))
+	log.Debug(fmt.Sprintf("Going to connect twitch channels %s", strings.Join(cfg.Channels, ", ")))
 	client.Join(cfg.Channels...)
 	client.OnConnect(func() {
 		log.Debug("Twitch connected")
 	})
 
-	client.OnPrivateMessage(func(message twitch.PrivateMessage) {
-		log.Trace(fmt.Sprintf(
-			"Received twitch message [%s] %s: %s",
-			message.Channel,
-			message.User.Name,
-			message.Message,
-		))
-		go func() {
-			err := s.Repository.Insert(message)
-			if err != nil {
-				log.Error(err.Error())
-			}
-		}()
-	})
+	client.OnPrivateMessage(s.onMessageReceived)
 
 	err := client.Connect()
 	if err != nil {
@@ -56,4 +48,40 @@ func (s *Service) Init() {
 			log.Error(err.Error())
 		}
 	}(client)
+}
+
+func (s *Service) onMessageReceived(message twitch.PrivateMessage) {
+	log := config.GetLogger()
+	log.Trace(fmt.Sprintf(
+		"Received twitch message [%s] %s: %s",
+		message.Channel,
+		message.User.Name,
+		message.Message,
+	))
+	go func() {
+		err := s.Repository.Insert(message)
+		if err != nil {
+			log.Error("Error while insert twitch message", err)
+		}
+	}()
+	go func() {
+		_, isTushqa := tushqaUserIds[message.User.ID]
+		if !isTushqa {
+			return
+		}
+		exists, err := s.Repository.TushqaQuoteExists(message.Message)
+		if err != nil {
+			log.Error("Error while check existed Tushqa quote", err)
+			return
+		}
+		if exists {
+			log.Trace(fmt.Sprintf("Tushqa quote %s already exists", message.Message))
+			return
+		}
+		err = s.Repository.InsertTushqaQuote(message)
+		if err != nil {
+			log.Error("Error while save Tushqa quote", err)
+			return
+		}
+	}()
 }

@@ -49,7 +49,8 @@ type Telegram struct {
 }
 
 type Twitch struct {
-	Channels []string `long:"channel" env:"CHANNELS" env-delim:"," description:"Twitch channels to save messages"`
+	TushqaUserIds []string `long:"twitch-tushqa-user-id" env:"TUSHQA_USER_ID" env-delim:"," description:"Twitch Tushqa user ids"`
+	Channels      []string `long:"channel" env:"CHANNELS" env-delim:"," description:"Twitch channels to save messages"`
 }
 
 type Kinozal struct {

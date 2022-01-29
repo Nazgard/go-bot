@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -49,7 +50,7 @@ func (reg *Registry) Init() {
 
 	docs.SwaggerInfo.BasePath = "/"
 
-	w := log.Writer()
+	w := log.WriterLevel(logrus.DebugLevel)
 	gin.DefaultErrorWriter = w
 	gin.DefaultWriter = w
 	logger := gin.LoggerWithConfig(gin.LoggerConfig{

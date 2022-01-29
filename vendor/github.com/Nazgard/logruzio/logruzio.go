@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/logzio/logzio-go"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 // HookOpts represents Logrus Logzio hook options
@@ -49,7 +50,7 @@ func New(host, token, appName string, fields logrus.Fields) (*Hook, error) {
 func (h *Hook) Fire(entry *logrus.Entry) error {
 	r := map[string]interface{}{
 		"message":  entry.Message,
-		"severity": entry.Level.String(),
+		"severity": strings.ToUpper(entry.Level.String()),
 	}
 	// Add in context fields.
 	for k, v := range h.hookOpts.AdditionalFields {

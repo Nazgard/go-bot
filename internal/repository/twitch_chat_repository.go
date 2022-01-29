@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"makarov.dev/bot/internal/config"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gempir/go-twitch-irc/v2"
@@ -52,6 +54,7 @@ func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
+	message := strings.TrimSpace(m.Message)
 	_, err := r.getMessageCollection().InsertOne(ctx, TwitchChatMessage{
 		Id:      primitive.NewObjectID(),
 		Channel: m.Channel,
@@ -59,7 +62,7 @@ func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 			Id:   m.User.ID,
 			Name: m.User.Name,
 		},
-		Message:      m.Message,
+		Message:      message,
 		Raw:          m.Raw,
 		Created:      time.Now(),
 		OriginalTime: m.Time,
@@ -68,18 +71,34 @@ func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 		return err
 	}
 
-	_, isTushqaUser := tushqaUserIds[m.User.ID]
-	if isTushqaUser {
-		_, err := r.getTushqaQuoteCollection().InsertOne(ctx, TushqaQuote{
-			Id:      primitive.NewObjectID(),
-			Channel: m.Channel,
-			Message: m.Message,
-			Created: time.Now(),
-		})
-		if err != nil {
-			return err
+	go func() {
+		_, isTushqaUser := tushqaUserIds[m.User.ID]
+		if isTushqaUser {
+			tushqaQuoteCollection := r.getTushqaQuoteCollection()
+			limit := int64(1)
+			count, err := tushqaQuoteCollection.CountDocuments(
+				ctx,
+				bson.M{"$regex": primitive.Regex{Pattern: message, Options: "i"}},
+				&options.CountOptions{Limit: &limit},
+			)
+			if err != nil {
+				log.Error("Error while check existed Tushqa quote", err)
+				return
+			}
+			if count > 0 {
+				return
+			}
+			_, err = tushqaQuoteCollection.InsertOne(ctx, TushqaQuote{
+				Id:      primitive.NewObjectID(),
+				Channel: m.Channel,
+				Message: message,
+				Created: time.Now(),
+			})
+			if err != nil {
+				log.Error("Error while save Tushqa quote", err)
+			}
 		}
-	}
+	}()
 
 	return nil
 }

@@ -227,8 +227,8 @@ func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error 
 	msg := tgbotapi.PhotoConfig{
 		BaseFile: tgbotapi.BaseFile{
 			BaseChat: tgbotapi.BaseChat{
-				ChannelUsername: cfg.Telegram.LostFilmUpdateChannel,
-				ReplyMarkup:     markups,
+				ChatID:      cfg.Telegram.LostFilmUpdateChannel,
+				ReplyMarkup: markups,
 			},
 			File: tgbotapi.FileReader{
 				Name:   "img",

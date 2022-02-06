@@ -139,7 +139,7 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 			return
 		}
 
-		err = s.Telegram.SendMessageLostfilmChannel(itemTo)
+		err = s.Telegram.SendMessageLostFilmChannel(itemTo)
 		if err != nil {
 			log.Error("Error while send item", err.Error())
 			return

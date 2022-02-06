@@ -44,7 +44,7 @@ func NewTwitchChatRepository(database *mongo.Database) *TwitchChatRepository {
 	return &TwitchChatRepository{Database: database}
 }
 
-func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
+func (r *TwitchChatRepository) Insert(m *twitch.PrivateMessage) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
@@ -67,14 +67,14 @@ func (r *TwitchChatRepository) Insert(m twitch.PrivateMessage) error {
 	return nil
 }
 
-func (r *TwitchChatRepository) TushqaQuoteExists(message string) (bool, error) {
+func (r *TwitchChatRepository) TushqaQuoteExists(m *twitch.PrivateMessage) (bool, error) {
 	ctx, cancel := r.getContext()
 	defer cancel()
 	tushqaQuoteCollection := r.getTushqaQuoteCollection()
 	limit := int64(1)
 	count, err := tushqaQuoteCollection.CountDocuments(
 		ctx,
-		bson.M{"message": fmt.Sprintf("/^%s$/i", message)},
+		bson.M{"message": fmt.Sprintf("/^%s$/i", strings.TrimSpace(m.Message))},
 		&options.CountOptions{Limit: &limit},
 	)
 	if err != nil {
@@ -83,7 +83,7 @@ func (r *TwitchChatRepository) TushqaQuoteExists(message string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *TwitchChatRepository) InsertTushqaQuote(m twitch.PrivateMessage) error {
+func (r *TwitchChatRepository) InsertTushqaQuote(m *twitch.PrivateMessage) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 	tushqaQuoteCollection := r.getTushqaQuoteCollection()

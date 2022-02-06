@@ -58,8 +58,9 @@ func (s *Service) onMessageReceived(message twitch.PrivateMessage) {
 		message.User.Name,
 		message.Message,
 	))
+	msgLink := &message
 	go func() {
-		err := s.Repository.Insert(message)
+		err := s.Repository.Insert(msgLink)
 		if err != nil {
 			log.Error("Error while insert twitch message", err)
 		}
@@ -69,7 +70,7 @@ func (s *Service) onMessageReceived(message twitch.PrivateMessage) {
 		if !isTushqa {
 			return
 		}
-		exists, err := s.Repository.TushqaQuoteExists(message.Message)
+		exists, err := s.Repository.TushqaQuoteExists(msgLink)
 		if err != nil {
 			log.Error("Error while check existed Tushqa quote", err)
 			return
@@ -78,7 +79,7 @@ func (s *Service) onMessageReceived(message twitch.PrivateMessage) {
 			log.Trace(fmt.Sprintf("Tushqa quote %s already exists", message.Message))
 			return
 		}
-		err = s.Repository.InsertTushqaQuote(message)
+		err = s.Repository.InsertTushqaQuote(msgLink)
 		if err != nil {
 			log.Error("Error while save Tushqa quote", err)
 			return

@@ -3,6 +3,7 @@ package lostfilm
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -141,7 +142,12 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 
 		err = s.Telegram.SendMessageLostFilmChannel(itemTo)
 		if err != nil {
-			log.Error("Error while send item", err.Error())
+			log.Error(fmt.Sprintf(
+				"%s (channel id %d) %s",
+				"Error while send lostfilm item to telegram channel",
+				config.GetConfig().Telegram.LostFilmUpdateChannel,
+				err.Error(),
+			))
 			return
 		}
 	}

@@ -200,7 +200,6 @@ func (s *ServiceImpl) duration(a, b time.Time) string {
 }
 
 func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error {
-	log := config.GetLogger()
 	cfg := config.GetConfig()
 	domain := cfg.Web.Domain
 
@@ -227,8 +226,8 @@ func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error 
 	msg := tgbotapi.PhotoConfig{
 		BaseFile: tgbotapi.BaseFile{
 			BaseChat: tgbotapi.BaseChat{
-				ChannelUsername: cfg.Telegram.LostFilmUpdateChannel,
-				ReplyMarkup:     markups,
+				ChatID:      cfg.Telegram.LostFilmUpdateChannel,
+				ReplyMarkup: markups,
 			},
 			File: tgbotapi.FileReader{
 				Name:   "img",
@@ -240,7 +239,6 @@ func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error 
 	}
 	_, err = s.mrBot.Send(msg)
 	if err != nil {
-		log.Error(err)
 		return err
 	}
 	return nil

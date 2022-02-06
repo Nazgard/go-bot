@@ -46,7 +46,7 @@ type Telegram struct {
 	Enable                bool   `long:"telegram-enable" env:"ENABLE" description:"Telegram integration is enabled"`
 	BotToken              string `long:"telegram-bot-token" env:"TOKEN" description:"Telegram bot token"`
 	Debug                 bool   `long:"debug" env:"DEBUG" description:"Telegram debug mode"`
-	LostFilmUpdateChannel string `long:"telegram-lostfilm-update-channel" default:"@lfpush" env:"LOSTFILM_UPDATE_CHANNEL" description:"Telegram channel for LostFilm updates"`
+	LostFilmUpdateChannel int64  `long:"telegram-lostfilm-update-channel" default:"-1001079947237" env:"LOSTFILM_UPDATE_CHANNEL" description:"Telegram channel for LostFilm updates"`
 }
 
 type Twitch struct {

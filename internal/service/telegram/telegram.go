@@ -2,12 +2,14 @@ package telegram
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/internal/service/kinozal"
 )
 
@@ -16,13 +18,22 @@ const day = time.Minute * 60 * 24
 
 type Service interface {
 	Init()
+	SendMessageLostFilmChannel(lfItem *repository.Item) error
 }
 
 type ServiceImpl struct {
+	HttpClient HttpClient
+	mrBot      *tgbotapi.BotAPI
 }
 
-func NewTelegramService() *ServiceImpl {
-	return &ServiceImpl{}
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+func NewTelegramService(httpClient HttpClient) *ServiceImpl {
+	return &ServiceImpl{
+		HttpClient: httpClient,
+	}
 }
 
 type telegramLogger struct {
@@ -48,6 +59,7 @@ func (s *ServiceImpl) Init() {
 		time.Sleep(15 * time.Second)
 		s.Init()
 	}
+	s.mrBot = bot
 	err = tgbotapi.SetLogger(&telegramLogger{})
 	if err != nil {
 		log.Error(err)
@@ -185,4 +197,51 @@ func (s *ServiceImpl) duration(a, b time.Time) string {
 	}
 
 	return fmt.Sprintf("%dd%s", n, d)
+}
+
+func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error {
+	log := config.GetLogger()
+	cfg := config.GetConfig()
+	domain := cfg.Web.Domain
+
+	posterRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https:%s", lfItem.Poster), nil)
+	if err != nil {
+		return err
+	}
+
+	response, err := s.HttpClient.Do(posterRequest)
+
+	markups := tgbotapi.InlineKeyboardMarkup{
+		InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0),
+	}
+	buttons := make([]tgbotapi.InlineKeyboardButton, 0)
+	for _, file := range lfItem.ItemFiles {
+		url := domain + "/dl/" + file.GridFsId.Hex()
+		buttons = append(buttons, tgbotapi.InlineKeyboardButton{
+			Text: file.Quality,
+			URL:  &url,
+		})
+	}
+	markups.InlineKeyboard = append(markups.InlineKeyboard, buttons)
+
+	msg := tgbotapi.PhotoConfig{
+		BaseFile: tgbotapi.BaseFile{
+			BaseChat: tgbotapi.BaseChat{
+				ChannelUsername: cfg.Telegram.LostFilmUpdateChannel,
+				ReplyMarkup:     markups,
+			},
+			File: tgbotapi.FileReader{
+				Name:   "img",
+				Reader: response.Body,
+				Size:   response.ContentLength,
+			},
+		},
+		Caption: fmt.Sprintf("%s. %s", lfItem.Name, lfItem.EpisodeNameFull),
+	}
+	_, err = s.mrBot.Send(msg)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	return nil
 }

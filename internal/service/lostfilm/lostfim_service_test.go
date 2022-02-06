@@ -101,6 +101,17 @@ var service = ServiceImpl{
 	Client:     client,
 	Repository: repositoryMock{},
 	Bucket:     bucketMock{},
+	Telegram:   &telegramServiceMock{},
+}
+
+type telegramServiceMock struct {
+}
+
+func (t *telegramServiceMock) Init() {
+}
+
+func (t *telegramServiceMock) SendMessageLostFilmChannel(lfItem *repository.Item) error {
+	return nil
 }
 
 var fakeRootElement = lostfilm.RootElement{

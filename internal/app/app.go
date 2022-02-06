@@ -34,9 +34,9 @@ func Init() {
 	lfCfg := cfg.LostFilm
 	lfClient := lostfilmClient.NewClient(lfCfg.CookieName, lfCfg.CookieVal)
 	kzClient := kinozalClient.NewClient(cfg.Kinozal.Cookie)
-	lfService := lostfilm.NewLostFilmService(lfClient, lfRepository, bucket)
 	kzService := kinozal.NewKinozalService(kzRepository)
-	telegramService := telegram.NewTelegramService()
+	telegramService := telegram.NewTelegramService(lfClient.Config.HttpClient)
+	lfService := lostfilm.NewLostFilmService(lfClient, lfRepository, bucket, telegramService)
 	twitchService := twitch.NewTwitchService(twitchChatRepository)
 	healthService := service.NewHealthService()
 	fileService := service.NewFileService(bucket, fileRepository)

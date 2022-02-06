@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"makarov.dev/bot/internal/config"
 	"time"
+
+	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/internal/service/telegram"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,6 +24,7 @@ type ServiceImpl struct {
 	Client     *lostfilm.Client
 	Repository repository.LostFilmRepository
 	Bucket     Bucket
+	Telegram   telegram.Service
 }
 
 type Service interface {
@@ -31,11 +34,12 @@ type Service interface {
 	Exist(page string) (bool, error)
 }
 
-func NewLostFilmService(client *lostfilm.Client, repository repository.LostFilmRepository, bucket Bucket) *ServiceImpl {
+func NewLostFilmService(client *lostfilm.Client, repository repository.LostFilmRepository, bucket Bucket, telegram telegram.Service) *ServiceImpl {
 	return &ServiceImpl{
 		Client:     client,
 		Repository: repository,
 		Bucket:     bucket,
+		Telegram:   telegram,
 	}
 }
 
@@ -118,7 +122,7 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 			return
 		}
 	} else {
-		err = s.Repository.Insert(&repository.Item{
+		itemTo := &repository.Item{
 			Id:              primitive.NewObjectID(),
 			Page:            element.Page,
 			Name:            element.Name,
@@ -128,9 +132,16 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 			Created:         time.Now(),
 			ItemFiles:       itemFiles,
 			Poster:          element.Poster,
-		})
+		}
+		err = s.Repository.Insert(itemTo)
 		if err != nil {
 			log.Error("Error while save item", err.Error())
+			return
+		}
+
+		err = s.Telegram.SendMessageLostfilmChannel(itemTo)
+		if err != nil {
+			log.Error("Error while send item", err.Error())
 			return
 		}
 	}

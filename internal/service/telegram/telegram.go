@@ -8,6 +8,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/internal/service/kinozal"
 )
 
@@ -16,9 +17,11 @@ const day = time.Minute * 60 * 24
 
 type Service interface {
 	Init()
+	SendMessageLostfilmChannel(messTorr *repository.Item) error
 }
 
 type ServiceImpl struct {
+	mrBot *tgbotapi.BotAPI
 }
 
 func NewTelegramService() *ServiceImpl {
@@ -48,6 +51,7 @@ func (s *ServiceImpl) Init() {
 		time.Sleep(15 * time.Second)
 		s.Init()
 	}
+	s.mrBot = bot
 	err = tgbotapi.SetLogger(&telegramLogger{})
 	if err != nil {
 		log.Error(err)
@@ -185,4 +189,14 @@ func (s *ServiceImpl) duration(a, b time.Time) string {
 	}
 
 	return fmt.Sprintf("%dd%s", n, d)
+}
+
+func (s *ServiceImpl) SendMessageLostfilmChannel(messTorr *repository.Item) error {
+	log := config.GetLogger()
+	_, err2 := s.mrBot.Send(tgbotapi.NewMessageToChannel("@lfpush", messTorr.EpisodeNameFull))
+	if err2 != nil {
+		log.Error(err2)
+		return err2
+	}
+	return nil
 }

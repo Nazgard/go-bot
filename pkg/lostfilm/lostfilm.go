@@ -216,6 +216,9 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
+	if strings.HasPrefix(url, c.Config.MainPageUrl) {
+		req.Header.Set("referer", c.Config.MainPageUrl)
+	}
 	req.Header.Set("Cookie", c.Config.Cookie.Name+"="+c.Config.Cookie.Value)
 
 	res, err := c.Config.HttpClient.Do(req)

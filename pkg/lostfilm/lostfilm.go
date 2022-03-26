@@ -13,8 +13,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-const defaultMainPageUrl = "https://www.lostfilm.win"
-
 type ClientConfig struct {
 	HttpClient  HttpClient
 	MainPageUrl string
@@ -70,14 +68,14 @@ type FullItemTorrent struct {
 func NewClient(cookieName, cookieVal string) *Client {
 	return &Client{Config: ClientConfig{
 		HttpClient:  &http.Client{Timeout: 30 * time.Second},
-		MainPageUrl: defaultMainPageUrl,
+		MainPageUrl: getMainPageUrl(),
 		Cookie:      http.Cookie{Name: cookieName, Value: cookieVal},
 	}}
 }
 
 func (c Client) GetRoot() ([]RootElement, error) {
 	log := config.GetLogger()
-	doc, err := c.getDoc(c.getMainPageUrl() + "/new")
+	doc, err := c.getDoc(getMainPageUrl() + "/new")
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
@@ -121,7 +119,7 @@ func (c Client) GetRoot() ([]RootElement, error) {
 
 func (c Client) GetEpisode(page string) (*Episode, error) {
 	log := config.GetLogger()
-	doc, err := c.getDoc(c.getMainPageUrl() + page)
+	doc, err := c.getDoc(getMainPageUrl() + page)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
@@ -143,7 +141,7 @@ func (c Client) GetEpisode(page string) (*Episode, error) {
 
 func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 	log := config.GetLogger()
-	doc, err := c.getDoc(c.getMainPageUrl() + "/v_search.php?a=" + strconv.FormatInt(episodeId, 10))
+	doc, err := c.getDoc(getMainPageUrl() + "/v_search.php?a=" + strconv.FormatInt(episodeId, 10))
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
@@ -201,11 +199,8 @@ func (c Client) Listing(ch chan RootElement, interval time.Duration) {
 	}
 }
 
-func (c Client) getMainPageUrl() string {
-	if c.Config.MainPageUrl != "" {
-		return c.Config.MainPageUrl
-	}
-	return defaultMainPageUrl
+func getMainPageUrl() string {
+	return config.GetConfig().LostFilm.Domain
 }
 
 func (c Client) getRequest(url string) (io.ReadCloser, error) {

@@ -3,7 +3,6 @@ package lostfilm
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -54,25 +53,25 @@ func (s *ServiceImpl) LastEpisodes(ctx context.Context) ([]repository.Item, erro
 
 func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 	log := config.GetLogger()
-	oldItem, err := s.Repository.GetByPage(element.Page)
+	item, err := s.Repository.GetByPage(element.Page)
 	if err != nil && err != mongo.ErrNoDocuments {
-		log.Error("Error while get item by page", element.Page)
+		log.Errorf("Error while get item by page %s", element.Page)
 		return
 	}
-	if oldItem == nil {
-		log.Info("Store LF item", element.Page)
+	if item == nil {
+		log.Infof("Store LF item %s", element.Page)
 	} else {
-		log.Info("Try append torrent", element.Page)
+		log.Infof("Try append torrent %s", element.Page)
 	}
 	episode, err := s.Client.GetEpisode(element.Page)
 	if err != nil {
-		log.Error("Error while get episode", err.Error())
+		log.Errorf("Error while get episode %s", err.Error())
 		return
 	}
 
 	refs, err := s.Client.GetTorrentRefs(episode.Id)
 	if err != nil {
-		log.Error("Error while get episode refs", err.Error())
+		log.Errorf("Error while get episode refs %s", err.Error())
 		return
 	}
 
@@ -81,8 +80,8 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 
 	for _, ref := range refs {
 		alreadyExist := false
-		if oldItem != nil {
-			for _, file := range oldItem.ItemFiles {
+		if item != nil {
+			for _, file := range item.ItemFiles {
 				if file.Quality == ref.Quality {
 					alreadyExist = true
 					break
@@ -98,13 +97,13 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 		}
 		torrent, err := s.Client.GetTorrent(ref.TorrentUrl)
 		if err != nil {
-			log.Error("Error while get torrent", err.Error())
+			log.Errorf("Error while get torrent %s", err.Error())
 			return
 		}
 
 		objectID, err := s.Bucket.UploadFromStream(element.Name+". "+nameFull+".torrent", bytes.NewReader(torrent))
 		if err != nil {
-			log.Error("Error while store torrent", err.Error())
+			log.Errorf("Error while store torrent %s", err.Error())
 			return
 		}
 
@@ -115,15 +114,15 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 		})
 	}
 
-	if oldItem != nil {
-		oldItem.ItemFiles = append(oldItem.ItemFiles, itemFiles...)
-		err := s.Repository.Update(oldItem)
+	if item != nil {
+		item.ItemFiles = append(item.ItemFiles, itemFiles...)
+		err := s.Repository.Update(item)
 		if err != nil {
-			log.Error("Error while update item", oldItem.Id.Hex(), err.Error())
+			log.Errorf("Error while update item %s %s", item.Id.Hex(), err.Error())
 			return
 		}
 	} else {
-		itemTo := &repository.Item{
+		item = &repository.Item{
 			Id:              primitive.NewObjectID(),
 			Page:            element.Page,
 			Name:            element.Name,
@@ -134,20 +133,20 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 			ItemFiles:       itemFiles,
 			Poster:          element.Poster,
 		}
-		err = s.Repository.Insert(itemTo)
+		err = s.Repository.Insert(item)
 		if err != nil {
-			log.Error("Error while save item", err.Error())
+			log.Errorf("Error while save item %s", err.Error())
 			return
 		}
-
-		err = s.Telegram.SendMessageLostFilmChannel(itemTo)
+	}
+	if len(itemFiles) == 3 {
+		err = s.Telegram.SendMessageLostFilmChannel(item)
 		if err != nil {
-			log.Error(fmt.Sprintf(
-				"%s (channel id %d) %s",
+			log.Errorf("%s (channel id %d) %s",
 				"Error while send lostfilm item to telegram channel",
 				config.GetConfig().Telegram.LostFilmUpdateChannel,
 				err.Error(),
-			))
+			)
 			return
 		}
 	}

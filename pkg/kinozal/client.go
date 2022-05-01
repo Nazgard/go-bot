@@ -4,9 +4,11 @@ import (
 	"io"
 	"io/ioutil"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/pkg"
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -34,12 +36,25 @@ type Element struct {
 	Torrent []byte
 }
 
-func NewClient(cookie string) *Client {
+var once = sync.Once{}
+var client *Client
+
+func NewClient() *Client {
+	cfg := config.GetConfig().Kinozal
 	return &Client{ClientConfig{
-		HttpClient:  &http.Client{Timeout: 30 * time.Second},
+		HttpClient:  pkg.DefaultHttpClient,
 		MainPageUrl: defaultMainPageUrl,
-		Cookie:      cookie,
+		Cookie:      cfg.Cookie,
 	}}
+}
+
+func GetDefaultClient() *Client {
+	if client == nil {
+		once.Do(func() {
+			client = NewClient()
+		})
+	}
+	return client
 }
 
 func (c Client) GetRoot() ([]int64, error) {

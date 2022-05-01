@@ -1,57 +1,51 @@
-package lostfilm
+package service
 
 import (
 	"bytes"
 	"context"
-	"io"
+	"sync"
 	"time"
-
-	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/service/telegram"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/pkg/lostfilm"
 )
 
-type Bucket interface {
-	UploadFromStream(filename string, source io.Reader, opts ...*options.UploadOptions) (primitive.ObjectID, error)
-}
-
-type ServiceImpl struct {
+type LostFilmServiceImpl struct {
 	Client     *lostfilm.Client
 	Repository repository.LostFilmRepository
 	Bucket     Bucket
-	Telegram   telegram.Service
+	Telegram   TelegramService
 }
 
-type Service interface {
-	Init()
-	LastEpisodes(ctx context.Context) ([]repository.Item, error)
-	StoreElement(element lostfilm.RootElement)
-	Exist(page string) (bool, error)
-}
+var onceLostFilmService = sync.Once{}
+var lostFilmService LostFilmService
 
-func NewLostFilmService(client *lostfilm.Client, repository repository.LostFilmRepository, bucket Bucket, telegram telegram.Service) *ServiceImpl {
-	return &ServiceImpl{
+func NewLostFilmService(client *lostfilm.Client) *LostFilmServiceImpl {
+	return &LostFilmServiceImpl{
 		Client:     client,
-		Repository: repository,
-		Bucket:     bucket,
-		Telegram:   telegram,
+		Repository: repository.GetLostFilmRepository(),
+		Bucket:     repository.GetBucket(),
+		Telegram:   GetTelegramService(),
 	}
 }
 
-func (s *ServiceImpl) Init() {
-
+func GetLostFilmService() LostFilmService {
+	if lostFilmService == nil {
+		onceLostFilmService.Do(func() {
+			lostFilmService = NewLostFilmService(lostfilm.GetDefaultClient())
+		})
+	}
+	return lostFilmService
 }
 
-func (s *ServiceImpl) LastEpisodes(ctx context.Context) ([]repository.Item, error) {
+func (s *LostFilmServiceImpl) LastEpisodes(ctx context.Context) ([]repository.Item, error) {
 	return s.Repository.FindLatest(ctx)
 }
 
-func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
+func (s *LostFilmServiceImpl) StoreElement(element lostfilm.RootElement) {
 	log := config.GetLogger()
 	item, err := s.Repository.GetByPage(element.Page)
 	if err != nil && err != mongo.ErrNoDocuments {
@@ -152,6 +146,6 @@ func (s *ServiceImpl) StoreElement(element lostfilm.RootElement) {
 	}
 }
 
-func (s *ServiceImpl) Exist(page string) (bool, error) {
+func (s *LostFilmServiceImpl) Exist(page string) (bool, error) {
 	return s.Repository.Exists(page)
 }

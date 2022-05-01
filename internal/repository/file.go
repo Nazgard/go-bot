@@ -5,14 +5,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"makarov.dev/bot/internal/config"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-type FileRepository interface {
-	Log(ctx *gin.Context, fileId primitive.ObjectID) error
-}
 
 type FileDownloadEntry struct {
 	Id         primitive.ObjectID `bson:"_id"`
@@ -26,8 +23,20 @@ type FileRepositoryImpl struct {
 	Database *mongo.Database
 }
 
-func NewFileRepository(database *mongo.Database) *FileRepositoryImpl {
-	return &FileRepositoryImpl{Database: database}
+var onceFileRepository = sync.Once{}
+var fileRepository FileRepository
+
+func NewFileRepository() *FileRepositoryImpl {
+	return &FileRepositoryImpl{Database: GetDatabase()}
+}
+
+func GetFileRepository() FileRepository {
+	if fileRepository == nil {
+		onceFileRepository.Do(func() {
+			fileRepository = NewFileRepository()
+		})
+	}
+	return fileRepository
 }
 
 func (f *FileRepositoryImpl) Log(ctx *gin.Context, fileId primitive.ObjectID) error {

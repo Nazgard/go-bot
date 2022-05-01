@@ -3,7 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/service/lostfilm"
+	"makarov.dev/bot/internal/service"
 )
 
 const dateLayout = "Mon, 02 Jan 2006 15:04:05 -0700"
@@ -32,7 +32,7 @@ type RssChannelItem struct {
 }
 
 type LostFilmController struct {
-	Service lostfilm.Service
+	Service service.LostFilmService
 }
 
 func (c *LostFilmController) Add(g *gin.RouterGroup) {

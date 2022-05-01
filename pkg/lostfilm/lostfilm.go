@@ -5,9 +5,11 @@ import (
 	"io"
 	"io/ioutil"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/pkg"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -65,12 +67,25 @@ type FullItemTorrent struct {
 	Torrent     []byte `json:"-"`
 }
 
-func NewClient(cookieName, cookieVal string) *Client {
+var once = sync.Once{}
+var client *Client
+
+func NewClient() *Client {
+	cfg := config.GetConfig().LostFilm
 	return &Client{Config: ClientConfig{
-		HttpClient:  &http.Client{Timeout: 30 * time.Second},
+		HttpClient:  pkg.DefaultHttpClient,
 		MainPageUrl: getMainPageUrl(),
-		Cookie:      http.Cookie{Name: cookieName, Value: cookieVal},
+		Cookie:      http.Cookie{Name: cfg.CookieName, Value: cfg.CookieVal},
 	}}
+}
+
+func GetDefaultClient() *Client {
+	if client == nil {
+		once.Do(func() {
+			client = NewClient()
+		})
+	}
+	return client
 }
 
 func (c Client) GetRoot() ([]RootElement, error) {

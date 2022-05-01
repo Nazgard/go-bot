@@ -7,17 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"makarov.dev/bot/internal/config"
+	"sync"
 	"time"
 )
-
-type KinozalRepository interface {
-	IsFavorite(id int64) (bool, error)
-	Exist(id int64, name string) (bool, error)
-	Insert(item *KinozalItem) error
-	InsertFavorite(detailId int64) error
-	DeleteFavorite(detailId int64) error
-	LastEpisodes(ctx context.Context) ([]KinozalItem, error)
-}
 
 type Favorite struct {
 	Id       primitive.ObjectID `bson:"_id"`
@@ -36,8 +28,20 @@ type KinozalRepositoryImpl struct {
 	Database *mongo.Database
 }
 
-func NewKinozalRepository(database *mongo.Database) *KinozalRepositoryImpl {
-	return &KinozalRepositoryImpl{Database: database}
+var onceKz = sync.Once{}
+var kzRepository KinozalRepository
+
+func NewKinozalRepository() *KinozalRepositoryImpl {
+	return &KinozalRepositoryImpl{Database: GetDatabase()}
+}
+
+func GetKinozalRepository() KinozalRepository {
+	if kzRepository == nil {
+		onceKz.Do(func() {
+			kzRepository = NewKinozalRepository()
+		})
+	}
+	return kzRepository
 }
 
 func (r *KinozalRepositoryImpl) IsFavorite(id int64) (bool, error) {

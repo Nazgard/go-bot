@@ -6,7 +6,7 @@ import (
 )
 
 type TwitchController struct {
-	Repository *repository.TwitchChatRepository
+	Repository *repository.TwitchChatRepositoryImpl
 }
 
 func (c *TwitchController) Add(g *gin.RouterGroup) {

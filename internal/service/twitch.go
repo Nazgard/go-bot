@@ -1,8 +1,9 @@
-package twitch
+package service
 
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gempir/go-twitch-irc/v2"
@@ -10,17 +11,29 @@ import (
 	"makarov.dev/bot/internal/repository"
 )
 
-type Service struct {
-	Repository *repository.TwitchChatRepository
+type TwitchServiceImpl struct {
+	Repository *repository.TwitchChatRepositoryImpl
 }
 
-var tushqaUserIds = make(map[string]interface{}, 0)
+var tushqaUserIds = make(map[string]any, 0)
 
-func NewTwitchService(repository *repository.TwitchChatRepository) *Service {
-	return &Service{Repository: repository}
+var once = sync.Once{}
+var s TwitchService
+
+func NewTwitchService() *TwitchServiceImpl {
+	return &TwitchServiceImpl{Repository: repository.GetTwitchChatRepository()}
 }
 
-func (s *Service) Init() {
+func GetTwitchService() TwitchService {
+	if s == nil {
+		once.Do(func() {
+			s = NewTwitchService()
+		})
+	}
+	return s
+}
+
+func (s *TwitchServiceImpl) Start() {
 	log := config.GetLogger()
 	cfg := config.GetConfig().Twitch
 	for _, tushqaUserId := range cfg.TushqaUserIds {
@@ -39,7 +52,7 @@ func (s *Service) Init() {
 	if err != nil {
 		log.Error(err.Error())
 		time.Sleep(10 * time.Second)
-		s.Init()
+		s.Start()
 	}
 
 	defer func(client *twitch.Client) {
@@ -50,7 +63,7 @@ func (s *Service) Init() {
 	}(client)
 }
 
-func (s *Service) onMessageReceived(message twitch.PrivateMessage) {
+func (s *TwitchServiceImpl) onMessageReceived(message twitch.PrivateMessage) {
 	log := config.GetLogger()
 	log.Trace(fmt.Sprintf(
 		"Received twitch message [%s] %s: %s",

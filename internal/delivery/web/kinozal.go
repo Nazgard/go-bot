@@ -3,12 +3,12 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/service/kinozal"
+	"makarov.dev/bot/internal/service"
 	"time"
 )
 
 type KinozalController struct {
-	Service kinozal.Service
+	Service service.KinozalService
 }
 
 func (c *KinozalController) Add(g *gin.RouterGroup) {

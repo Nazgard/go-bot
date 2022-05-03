@@ -7,8 +7,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"makarov.dev/bot/internal/config"
+	"sync"
 	"time"
 )
+
+var onceDb sync.Once
+var onceBucket sync.Once
+var db *mongo.Database
+var bucket *gridfs.Bucket
 
 func NewDatabase() *mongo.Database {
 	cfg := config.GetConfig()
@@ -26,6 +32,24 @@ func NewBucket(db *mongo.Database) *gridfs.Bucket {
 	bucket, err := gridfs.NewBucket(db)
 	if err != nil {
 		log.Fatal(err)
+	}
+	return bucket
+}
+
+func GetDatabase() *mongo.Database {
+	if db == nil {
+		onceDb.Do(func() {
+			db = NewDatabase()
+		})
+	}
+	return db
+}
+
+func GetBucket() *gridfs.Bucket {
+	if bucket == nil {
+		onceBucket.Do(func() {
+			bucket = NewBucket(GetDatabase())
+		})
 	}
 	return bucket
 }

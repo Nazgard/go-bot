@@ -13,19 +13,10 @@ import (
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
 	"makarov.dev/bot/internal/service"
-	"makarov.dev/bot/internal/service/kinozal"
-	"makarov.dev/bot/internal/service/lostfilm"
 )
 
 type Controller interface {
 	Add(g *gin.RouterGroup)
-}
-
-type Registry struct {
-	FileService      service.FileService
-	LFService        lostfilm.Service
-	KZService        kinozal.Service
-	TwitchRepository *repository.TwitchChatRepository
 }
 
 // NewError example
@@ -43,7 +34,7 @@ type HTTPError struct {
 	Message string `json:"message" example:"status bad request"`
 }
 
-func (reg *Registry) Init() {
+func StartWeb() {
 	cfg := config.GetConfig()
 	webCfg := cfg.Web
 	log := config.GetLogger()
@@ -77,27 +68,32 @@ func (reg *Registry) Init() {
 		pprof.Register(r, "dev/pprof")
 	}
 
+	lfService := service.GetLostFilmService()
+	kzService := service.GetKinozalService()
+	fsService := service.GetFileService()
+	tRepository := repository.GetTwitchChatRepository()
+
 	lfGroup := r.Group("/lostfilm")
 	{
-		ctr := LostFilmController{Service: reg.LFService}
+		ctr := LostFilmController{Service: lfService}
 		ctr.Add(lfGroup)
 	}
 
 	kinozalGroup := r.Group("/kinozal")
 	{
-		ctr := KinozalController{Service: reg.KZService}
+		ctr := KinozalController{Service: kzService}
 		ctr.Add(kinozalGroup)
 	}
 
 	fileGroup := r.Group("/dl")
 	{
-		ctr := FileController{FileService: reg.FileService}
+		ctr := FileController{FileService: fsService}
 		ctr.Add(fileGroup)
 	}
 
 	twitchGroup := r.Group("/twitch")
 	{
-		ctr := TwitchController{Repository: reg.TwitchRepository}
+		ctr := TwitchController{Repository: tRepository}
 		ctr.Add(twitchGroup)
 	}
 

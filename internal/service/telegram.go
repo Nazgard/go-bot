@@ -1,25 +1,23 @@
-package telegram
+package service
 
 import (
 	"fmt"
+	"makarov.dev/bot/pkg"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
-	"makarov.dev/bot/internal/service/kinozal"
 )
 
-const dateParseLayout = "2006-01-02"
-const day = time.Minute * 60 * 24
-
-type Service interface {
-	Init()
-	SendMessageLostFilmChannel(lfItem *repository.Item) error
-}
+const (
+	dateParseLayout = "2006-01-02"
+	day             = time.Hour * 24
+)
 
 type ServiceImpl struct {
 	HttpClient HttpClient
@@ -30,51 +28,64 @@ type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-func NewTelegramService(httpClient HttpClient) *ServiceImpl {
+var onceTelegramService = sync.Once{}
+var telegramService TelegramService
+
+func NewTelegramService() *ServiceImpl {
 	return &ServiceImpl{
-		HttpClient: httpClient,
+		HttpClient: pkg.DefaultHttpClient,
 	}
+}
+
+func GetTelegramService() TelegramService {
+	if telegramService == nil {
+		onceTelegramService.Do(func() {
+			telegramService = NewTelegramService()
+		})
+	}
+	return telegramService
 }
 
 type telegramLogger struct {
 }
 
-func (t *telegramLogger) Println(v ...interface{}) {
+func (t *telegramLogger) Println(v ...any) {
 	config.GetLogger().Debug(v...)
 }
 
-func (t *telegramLogger) Printf(format string, v ...interface{}) {
+func (t *telegramLogger) Printf(format string, v ...any) {
 	config.GetLogger().Debug(v...)
 }
 
-func (s *ServiceImpl) Init() {
+func (s *ServiceImpl) Start() {
 	log := config.GetLogger()
 	cfg := config.GetConfig().Telegram
 	if !cfg.Enable {
+		log.Info("Telegram integration disabled")
 		return
 	}
 	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
-		log.Error("Error while connect to telegram ", err.Error(), " retrying in 15 sec")
+		log.Errorf("Error while connect to telegram %s %s", err.Error(), " retrying in 15 sec")
 		time.Sleep(15 * time.Second)
-		s.Init()
+		s.Start()
 	}
 	s.mrBot = bot
 	err = tgbotapi.SetLogger(&telegramLogger{})
 	if err != nil {
-		log.Error(err)
+		log.Errorf("Error while set looger %s", err.Error())
 	}
 
 	bot.Debug = cfg.Debug
 
-	log.Info("Authorized on telegram account ", bot.Self.UserName)
+	log.Infof("Authorized on telegram account %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
-		log.Error("Error while get telegram updates", err)
+		log.Errorf("Error while get telegram updates %s", err.Error())
 	}
 
 	for update := range updates {
@@ -88,7 +99,7 @@ func (s *ServiceImpl) Init() {
 
 		_, err := bot.Send(msg)
 		if err != nil {
-			log.Error("Error while send telegram message", err.Error())
+			log.Errorf("Error while send telegram message %s", err.Error())
 		}
 	}
 }
@@ -165,7 +176,10 @@ func (s *ServiceImpl) kinozalAddFavorite(txt string) string {
 	if err != nil {
 		return err.Error()
 	}
-	kinozal.AddFavoriteCh <- id
+	err = GetKinozalService().AddFavorite(id)
+	if err != nil {
+		return err.Error()
+	}
 	return "Ok"
 }
 
@@ -174,7 +188,10 @@ func (s *ServiceImpl) kinozalDeleteFavorite(txt string) string {
 	if err != nil {
 		return err.Error()
 	}
-	kinozal.DeleteFavoriteCh <- id
+	err = GetKinozalService().DeleteFavorite(id)
+	if err != nil {
+		return err.Error()
+	}
 	return "Ok"
 }
 
@@ -201,6 +218,9 @@ func (s *ServiceImpl) duration(a, b time.Time) string {
 
 func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error {
 	cfg := config.GetConfig()
+	if !cfg.Telegram.Enable {
+		return nil
+	}
 	domain := cfg.Web.Domain
 
 	posterRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https:%s", lfItem.Poster), nil)

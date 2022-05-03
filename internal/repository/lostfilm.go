@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"makarov.dev/bot/internal/config"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -33,16 +34,20 @@ type LostFilmRepositoryImpl struct {
 	Database *mongo.Database
 }
 
-type LostFilmRepository interface {
-	FindLatest(ctx context.Context) ([]Item, error)
-	Exists(page string) (bool, error)
-	Insert(item *Item) error
-	Update(item *Item) error
-	GetByPage(page string) (*Item, error)
+var onceLf = sync.Once{}
+var lfRepository LostFilmRepository
+
+func NewLostFilmRepository() *LostFilmRepositoryImpl {
+	return &LostFilmRepositoryImpl{Database: GetDatabase()}
 }
 
-func NewLostFilmRepository(database *mongo.Database) *LostFilmRepositoryImpl {
-	return &LostFilmRepositoryImpl{Database: database}
+func GetLostFilmRepository() LostFilmRepository {
+	if lfRepository == nil {
+		onceLf.Do(func() {
+			lfRepository = NewLostFilmRepository()
+		})
+	}
+	return lfRepository
 }
 
 func (r *LostFilmRepositoryImpl) FindLatest(ctx context.Context) ([]Item, error) {

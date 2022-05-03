@@ -16,6 +16,7 @@ require (
 	github.com/swaggo/swag v1.7.6
 	github.com/umputun/go-flags v1.5.1
 	go.mongodb.org/mongo-driver v1.8.1
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/text v0.3.7
 )
 
@@ -59,7 +60,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
-	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
 	golang.org/x/tools v0.1.0 // indirect

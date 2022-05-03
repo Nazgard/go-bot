@@ -5,27 +5,31 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"makarov.dev/bot/internal/repository"
+	"sync"
 )
-
-type FileService interface {
-	GetFile(fileId *primitive.ObjectID) (*gridfs.DownloadStream, error)
-	LogDownload(ctx *gin.Context, fileId primitive.ObjectID) error
-}
-
-type Bucket interface {
-	OpenDownloadStream(fileID interface{}) (*gridfs.DownloadStream, error)
-}
 
 type FileServiceImpl struct {
 	Bucket     Bucket
 	Repository repository.FileRepository
 }
 
-func NewFileService(bucket Bucket, repository repository.FileRepository) *FileServiceImpl {
-	return &FileServiceImpl{Bucket: bucket, Repository: repository}
+var onceFileService = sync.Once{}
+var fileService FileService
+
+func NewFileService() *FileServiceImpl {
+	return &FileServiceImpl{Bucket: repository.GetBucket(), Repository: repository.GetFileRepository()}
 }
 
-func (s *FileServiceImpl) Init() {
+func GetFileService() FileService {
+	if fileService == nil {
+		onceFileService.Do(func() {
+			fileService = NewFileService()
+		})
+	}
+	return fileService
+}
+
+func (s *FileServiceImpl) Start() {
 
 }
 

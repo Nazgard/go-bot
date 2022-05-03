@@ -1,10 +1,11 @@
-package lostfilm
+package service
 
 import (
 	"bufio"
 	"context"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
 	"makarov.dev/bot/internal/repository"
@@ -21,17 +22,17 @@ type httpClientMock struct{}
 func (c *httpClientMock) Do(req *http.Request) (*http.Response, error) {
 	var file *os.File
 	if strings.HasPrefix(req.URL.Path, "/series") {
-		file, _ = os.Open("../../../pkg/lostfilm/episode_page.thtml")
+		file, _ = os.Open("../../pkg/lostfilm/episode_page.thtml")
 	}
 	switch req.URL.Path {
 	case "/new":
-		file, _ = os.Open("../../../pkg/lostfilm/root_page.thtml")
+		file, _ = os.Open("../../pkg/lostfilm/root_page.thtml")
 	case "/v_search.php":
-		file, _ = os.Open("../../../pkg/lostfilm/torrent_ref1.thtml")
+		file, _ = os.Open("../../pkg/lostfilm/torrent_ref1.thtml")
 	case "/v3/index.php":
-		file, _ = os.Open("../../../pkg/lostfilm/torrent_ref2.thtml")
+		file, _ = os.Open("../../pkg/lostfilm/torrent_ref2.thtml")
 	case "/td.php":
-		file, _ = os.Open("../../../pkg/lostfilm/Heels.S01E04.1080p.rus.LostFilm.TV.mkv.torrent")
+		file, _ = os.Open("../../pkg/lostfilm/Heels.S01E04.1080p.rus.LostFilm.TV.mkv.torrent")
 	}
 	return &http.Response{
 		StatusCode: 200,
@@ -40,6 +41,10 @@ func (c *httpClientMock) Do(req *http.Request) (*http.Response, error) {
 }
 
 type bucketMock struct{}
+
+func (b *bucketMock) OpenDownloadStream(fileID any) (*gridfs.DownloadStream, error) {
+	return nil, nil
+}
 
 func (b bucketMock) UploadFromStream(filename string, source io.Reader, opts ...*options.UploadOptions) (primitive.ObjectID, error) {
 	return primitive.NewObjectID(), nil
@@ -97,17 +102,17 @@ func (r repositoryMock) GetByPage(page string) (*repository.Item, error) {
 	return nil, mongo.ErrNoDocuments
 }
 
-var service = ServiceImpl{
+var serviceMock = LostFilmServiceImpl{
 	Client:     client,
 	Repository: repositoryMock{},
-	Bucket:     bucketMock{},
+	Bucket:     &bucketMock{},
 	Telegram:   &telegramServiceMock{},
 }
 
 type telegramServiceMock struct {
 }
 
-func (t *telegramServiceMock) Init() {
+func (t *telegramServiceMock) Start() {
 }
 
 func (t *telegramServiceMock) SendMessageLostFilmChannel(lfItem *repository.Item) error {
@@ -128,14 +133,9 @@ func after() {
 	items = make([]repository.Item, 0)
 }
 
-func TestService_Init(t *testing.T) {
-	service.Init()
-	after()
-}
-
 func TestService_LastEpisodes(t *testing.T) {
-	service.StoreElement(fakeRootElement)
-	episodes, err := service.LastEpisodes(context.Background())
+	serviceMock.StoreElement(fakeRootElement)
+	episodes, err := serviceMock.LastEpisodes(context.Background())
 	if err != nil {
 		t.Error(err)
 	}
@@ -146,7 +146,7 @@ func TestService_LastEpisodes(t *testing.T) {
 }
 
 func TestService_storeElement(t *testing.T) {
-	service.StoreElement(fakeRootElement)
+	serviceMock.StoreElement(fakeRootElement)
 	if len(items) != 1 {
 		t.Error("wrong len")
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gempir/go-twitch-irc/v2"
@@ -36,15 +37,27 @@ type TushqaQuote struct {
 	Created time.Time          `bson:"created" json:"created"`
 }
 
-type TwitchChatRepository struct {
+type TwitchChatRepositoryImpl struct {
 	Database *mongo.Database
 }
 
-func NewTwitchChatRepository(database *mongo.Database) *TwitchChatRepository {
-	return &TwitchChatRepository{Database: database}
+var onceTwitchChat = sync.Once{}
+var twitchChatRepository *TwitchChatRepositoryImpl
+
+func NewTwitchChatRepository() *TwitchChatRepositoryImpl {
+	return &TwitchChatRepositoryImpl{Database: GetDatabase()}
 }
 
-func (r *TwitchChatRepository) Insert(m *twitch.PrivateMessage) error {
+func GetTwitchChatRepository() *TwitchChatRepositoryImpl {
+	if twitchChatRepository == nil {
+		onceTwitchChat.Do(func() {
+			twitchChatRepository = NewTwitchChatRepository()
+		})
+	}
+	return twitchChatRepository
+}
+
+func (r *TwitchChatRepositoryImpl) Insert(m *twitch.PrivateMessage) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 
@@ -67,7 +80,7 @@ func (r *TwitchChatRepository) Insert(m *twitch.PrivateMessage) error {
 	return nil
 }
 
-func (r *TwitchChatRepository) TushqaQuoteExists(m *twitch.PrivateMessage) (bool, error) {
+func (r *TwitchChatRepositoryImpl) TushqaQuoteExists(m *twitch.PrivateMessage) (bool, error) {
 	ctx, cancel := r.getContext()
 	defer cancel()
 	tushqaQuoteCollection := r.getTushqaQuoteCollection()
@@ -83,7 +96,7 @@ func (r *TwitchChatRepository) TushqaQuoteExists(m *twitch.PrivateMessage) (bool
 	return count > 0, nil
 }
 
-func (r *TwitchChatRepository) InsertTushqaQuote(m *twitch.PrivateMessage) error {
+func (r *TwitchChatRepositoryImpl) InsertTushqaQuote(m *twitch.PrivateMessage) error {
 	ctx, cancel := r.getContext()
 	defer cancel()
 	tushqaQuoteCollection := r.getTushqaQuoteCollection()
@@ -99,7 +112,7 @@ func (r *TwitchChatRepository) InsertTushqaQuote(m *twitch.PrivateMessage) error
 	return nil
 }
 
-func (r *TwitchChatRepository) GetLastMessages(channel string, limit string) ([]TwitchChatMessage, error) {
+func (r *TwitchChatRepositoryImpl) GetLastMessages(channel string, limit string) ([]TwitchChatMessage, error) {
 	collection := r.getMessageCollection()
 	ctx, cancel := r.getContext()
 	defer cancel()
@@ -123,7 +136,7 @@ func (r *TwitchChatRepository) GetLastMessages(channel string, limit string) ([]
 	return result, nil
 }
 
-func (r *TwitchChatRepository) GetTushqaQuotes(limit string) ([]TushqaQuote, error) {
+func (r *TwitchChatRepositoryImpl) GetTushqaQuotes(limit string) ([]TushqaQuote, error) {
 	collection := r.getTushqaQuoteCollection()
 	ctx, cancel := r.getContext()
 	defer cancel()
@@ -148,14 +161,14 @@ func (r *TwitchChatRepository) GetTushqaQuotes(limit string) ([]TushqaQuote, err
 	return result, nil
 }
 
-func (r *TwitchChatRepository) getMessageCollection() *mongo.Collection {
+func (r *TwitchChatRepositoryImpl) getMessageCollection() *mongo.Collection {
 	return r.Database.Collection("twitch_chat_messages")
 }
 
-func (r *TwitchChatRepository) getTushqaQuoteCollection() *mongo.Collection {
+func (r *TwitchChatRepositoryImpl) getTushqaQuoteCollection() *mongo.Collection {
 	return r.Database.Collection("twitch_tushqa_quotes")
 }
 
-func (r *TwitchChatRepository) getContext() (context.Context, context.CancelFunc) {
+func (r *TwitchChatRepositoryImpl) getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 10*time.Second)
 }

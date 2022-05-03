@@ -1,10 +1,15 @@
 package config
 
 import (
+	"context"
 	"github.com/Nazgard/logruzio"
 	nested "github.com/antonfisher/nested-logrus-formatter"
 	log "github.com/sirupsen/logrus"
 	"github.com/umputun/go-flags"
+	"golang.org/x/net/proxy"
+	"makarov.dev/bot/pkg"
+	"net"
+	"net/http"
 )
 
 type Config struct {
@@ -17,6 +22,7 @@ type Config struct {
 	Telegram Telegram `group:"Telegram" env-namespace:"TELEGRAM"`
 	Twitch   Twitch   `group:"Twitch" env-namespace:"TWITCH"`
 	Kinozal  Kinozal  `group:"Kinozal" env-namespace:"KINOZAL"`
+	Proxy    Proxy    `group:"Proxy" env-namespace:"PROXY"`
 }
 
 type LostFilm struct {
@@ -60,6 +66,11 @@ type Kinozal struct {
 	Cookie string `long:"kinozal-cookie" env:"COOKIE" required:"true" description:"Kinozal cookie"`
 }
 
+type Proxy struct {
+	Enable     bool   `long:"proxy-enable" env:"ENABLE" description:"Proxy toggle"`
+	Socks5Addr string `long:"proxy-socks5-addr" env:"ADDR" description:"Socks5 proxy address"`
+}
+
 var config = &Config{}
 
 func Init(logger *log.Logger) {
@@ -80,8 +91,27 @@ func Init(logger *log.Logger) {
 		}
 		logger.AddHook(hook)
 	}
+
+	if config.Proxy.Enable {
+		dealer, err := proxy.SOCKS5("tcp", config.Proxy.Socks5Addr, nil, proxy.Direct)
+		if err != nil {
+			log.Errorf("Can't connect to the proxy: %s", err.Error())
+		}
+
+		dealContext := func(ctx context.Context, network, address string) (net.Conn, error) {
+			return dealer.Dial(network, address)
+		}
+
+		tr := &http.Transport{DialContext: dealContext}
+		pkg.DefaultHttpClient.Transport = tr
+		log.Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
+	}
 }
 
 func GetConfig() *Config {
 	return config
+}
+
+func setLogger() {
+
 }

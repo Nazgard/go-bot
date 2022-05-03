@@ -54,7 +54,7 @@ func (c *FileController) downloadFile() func(ctx *gin.Context) {
 		}()
 		file := reader.GetFile()
 		extraHeaders := map[string]string{
-			"Content-Disposition": "attachment; filename=" + file.Name,
+			"Content-Disposition": "attachment; filename=\"" + file.Name + "\"",
 		}
 		ctx.DataFromReader(http.StatusOK, file.Length, file.Name, reader, extraHeaders)
 	}

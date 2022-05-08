@@ -104,14 +104,10 @@ func Init(logger *log.Logger) {
 
 		tr := &http.Transport{DialContext: dealContext}
 		pkg.DefaultHttpClient.Transport = tr
-		log.Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
+		logger.Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
 	}
 }
 
 func GetConfig() *Config {
 	return config
-}
-
-func setLogger() {
-
 }

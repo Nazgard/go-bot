@@ -87,6 +87,7 @@ func (c *kinozalBackgroundJob) Start() {
 			GridFsId: objectID,
 			Created:  time.Now(),
 		})
+		log.Infof("Store KZ item %s (%d)", element.Name, id)
 		if err != nil {
 			log.Error(err.Error())
 			continue

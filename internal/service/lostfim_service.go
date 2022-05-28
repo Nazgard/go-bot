@@ -109,6 +109,7 @@ func (s *LostFilmServiceImpl) StoreElement(element lostfilm.RootElement) {
 	}
 
 	if item != nil {
+		item.RetryCount++
 		item.ItemFiles = append(item.ItemFiles, itemFiles...)
 		err := s.Repository.Update(item)
 		if err != nil {

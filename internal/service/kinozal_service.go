@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"makarov.dev/bot/internal/repository"
 	"sync"
+
+	"makarov.dev/bot/internal/repository"
 )
 
 var onceKinozalService = sync.Once{}
@@ -47,5 +48,5 @@ func (s *KinozalServiceImpl) AddFavorite(id int64) error {
 }
 
 func (s *KinozalServiceImpl) DeleteFavorite(id int64) error {
-	return s.DeleteFavorite(id)
+	return s.Repository.DeleteFavorite(id)
 }

@@ -2,14 +2,15 @@ package config
 
 import (
 	"context"
+	"net"
+	"net/http"
+
 	"github.com/Nazgard/logruzio"
 	nested "github.com/antonfisher/nested-logrus-formatter"
 	log "github.com/sirupsen/logrus"
 	"github.com/umputun/go-flags"
 	"golang.org/x/net/proxy"
 	"makarov.dev/bot/pkg"
-	"net"
-	"net/http"
 )
 
 type Config struct {
@@ -30,6 +31,7 @@ type LostFilm struct {
 	Domain     string `long:"lostfilm-domain" env:"DOMAIN" default:"https://www.lostfilm.pro" description:"LostFilm domain"`
 	CookieName string `long:"cookie-name" env:"COOKIE_NAME" required:"true" description:"LostFilm cookie name"`
 	CookieVal  string `long:"cookie-val" env:"COOKIE_VAL" required:"true" description:"LostFilm cookie val"`
+	MaxRetries int    `long:"max-retries" env:"MAX_RETRIES" default:"5" required:"true" description:"LostFilm max tries for download torrent"`
 }
 
 type Database struct {

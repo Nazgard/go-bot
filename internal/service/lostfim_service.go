@@ -46,6 +46,7 @@ func (s *LostFilmServiceImpl) LastEpisodes(ctx context.Context) ([]repository.It
 }
 
 func (s *LostFilmServiceImpl) StoreElement(element lostfilm.RootElement) {
+	cfg := config.GetConfig().LostFilm
 	log := config.GetLogger()
 	item, err := s.Repository.GetByPage(element.Page)
 	if err != nil && err != mongo.ErrNoDocuments {
@@ -109,6 +110,7 @@ func (s *LostFilmServiceImpl) StoreElement(element lostfilm.RootElement) {
 	}
 
 	if item != nil {
+		item.RetryCount++
 		item.ItemFiles = append(item.ItemFiles, itemFiles...)
 		err := s.Repository.Update(item)
 		if err != nil {
@@ -133,7 +135,7 @@ func (s *LostFilmServiceImpl) StoreElement(element lostfilm.RootElement) {
 			return
 		}
 	}
-	if len(itemFiles) == 3 {
+	if len(item.ItemFiles) == 3 || (len(item.ItemFiles) > 0 && item.RetryCount >= cfg.MaxRetries) {
 		err = s.Telegram.SendMessageLostFilmChannel(item)
 		if err != nil {
 			log.Errorf("%s (channel id %d) %s",

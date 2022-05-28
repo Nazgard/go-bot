@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
-	"makarov.dev/bot/internal/config"
 	"sync"
 	"time"
+
+	"makarov.dev/bot/internal/config"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,6 +23,7 @@ type Item struct {
 	Created         time.Time          `bson:"created"`
 	ItemFiles       []ItemFile         `bson:"item_files"`
 	Poster          string             `bson:"poster"`
+	RetryCount      int                `bson:"retry_count"`
 }
 
 type ItemFile struct {
@@ -71,6 +73,7 @@ func (r *LostFilmRepositoryImpl) FindLatest(ctx context.Context) ([]Item, error)
 }
 
 func (r *LostFilmRepositoryImpl) Exists(page string) (bool, error) {
+	cfg := config.GetConfig().LostFilm
 	item, err := r.GetByPage(page)
 	if err != nil {
 		return false, err
@@ -78,7 +81,7 @@ func (r *LostFilmRepositoryImpl) Exists(page string) (bool, error) {
 	if item == nil {
 		return false, nil
 	}
-	return len(item.ItemFiles) >= 3, nil
+	return len(item.ItemFiles) >= 3 || item.RetryCount >= cfg.MaxRetries, nil
 }
 
 func (r *LostFilmRepositoryImpl) Insert(item *Item) error {

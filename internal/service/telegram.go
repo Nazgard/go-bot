@@ -2,12 +2,13 @@ package service
 
 import (
 	"fmt"
-	"makarov.dev/bot/pkg"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"makarov.dev/bot/pkg"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
@@ -229,6 +230,9 @@ func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error 
 	}
 
 	response, err := s.HttpClient.Do(posterRequest)
+	if err != nil {
+		return err
+	}
 
 	markups := tgbotapi.InlineKeyboardMarkup{
 		InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0),

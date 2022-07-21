@@ -18,6 +18,9 @@ func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 	if strings.HasPrefix(req.URL.Path, "/series") {
 		file, _ = os.Open("./episode_page.thtml")
 	}
+	if strings.HasPrefix(req.URL.Path, "/movies") {
+		file, _ = os.Open("./movie_page.thtml")
+	}
 	switch req.URL.Path {
 	case "/new":
 		file, _ = os.Open("./root_page.thtml")
@@ -64,6 +67,20 @@ func TestGetEpisode(t *testing.T) {
 	}
 	if r.Id != 611001004 {
 		t.Fatal("Incorrect id")
+	}
+}
+
+func TestGetEpisodeWithMovie(t *testing.T) {
+	client := getClient()
+	e, err := client.GetEpisode("/movies/JurassicWorldDominion")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e == nil {
+		t.Fatal(err)
+	}
+	if e.Id != int64(679001001) {
+		t.Fatal("wrong episode")
 	}
 }
 

@@ -3,18 +3,19 @@ package service
 import (
 	"bufio"
 	"context"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/gridfs"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
-	"makarov.dev/bot/internal/repository"
-	"makarov.dev/bot/pkg/lostfilm"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/gridfs"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"makarov.dev/bot/internal/repository"
+	"makarov.dev/bot/pkg/lostfilm"
 )
 
 type httpClientMock struct{}
@@ -23,6 +24,9 @@ func (c *httpClientMock) Do(req *http.Request) (*http.Response, error) {
 	var file *os.File
 	if strings.HasPrefix(req.URL.Path, "/series") {
 		file, _ = os.Open("../../pkg/lostfilm/episode_page.thtml")
+	}
+	if strings.HasPrefix(req.URL.Path, "/movies") {
+		file, _ = os.Open("../../pkg/lostfilm/movie_page.thtml")
 	}
 	switch req.URL.Path {
 	case "/new":
@@ -152,6 +156,21 @@ func TestService_storeElement(t *testing.T) {
 	}
 	if items[0].Poster == "" {
 		t.Error("Empty poster")
+	}
+	after()
+}
+
+func TestService_storeMovieElement(t *testing.T) {
+	fakeRootElement.Page = "/movies/JurassicWorldDominion"
+	serviceMock.StoreElement(fakeRootElement)
+	if len(items) != 1 {
+		t.Error("wrong len")
+	}
+	if items[0].Poster == "" {
+		t.Error("Empty poster")
+	}
+	if items[0].EpisodeNameFull != "Фильм" {
+		t.Error("Wrong episode name full")
 	}
 	after()
 }

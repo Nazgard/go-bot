@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -71,6 +72,9 @@ func (s *LostFilmServiceImpl) StoreElement(element lostfilm.RootElement) {
 	}
 
 	nameFull := ""
+	if strings.HasPrefix(element.Page, "/movies") {
+		nameFull = "Фильм"
+	}
 	itemFiles := make([]repository.ItemFile, 0, 3)
 
 	for _, ref := range refs {

@@ -69,8 +69,10 @@ type Kinozal struct {
 }
 
 type Proxy struct {
-	Enable     bool   `long:"proxy-enable" env:"ENABLE" description:"Proxy toggle"`
-	Socks5Addr string `long:"proxy-socks5-addr" env:"ADDR" description:"Socks5 proxy address"`
+	Enable         bool   `long:"proxy-enable" env:"ENABLE" description:"Proxy toggle"`
+	Socks5Addr     string `long:"proxy-socks5-addr" env:"ADDR" description:"Socks5 proxy address"`
+	Socks5User     string `long:"proxy-socks5-user" env:"USER" description:"Socks5 proxy username"`
+	Socks5Password string `long:"proxy-socks5-password" env:"PASSWORD" description:"Socks5 proxy password"`
 }
 
 var config = &Config{}
@@ -95,7 +97,14 @@ func Init(logger *log.Logger) {
 	}
 
 	if config.Proxy.Enable {
-		dealer, err := proxy.SOCKS5("tcp", config.Proxy.Socks5Addr, nil, proxy.Direct)
+		var auth proxy.Auth
+		if config.Proxy.Socks5User != "" && config.Proxy.Socks5Password != "" {
+			auth = proxy.Auth{
+				User:     config.Proxy.Socks5User,
+				Password: config.Proxy.Socks5Password,
+			}
+		}
+		dealer, err := proxy.SOCKS5("tcp", config.Proxy.Socks5Addr, &auth, proxy.Direct)
 		if err != nil {
 			log.Errorf("Can't connect to the proxy: %s", err.Error())
 		}

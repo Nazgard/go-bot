@@ -172,8 +172,11 @@ func SetTempDirectory(dir string) SenderOptionFunc {
 // SetUrl set the url which maybe different from the defaultUrl
 func SetUrl(url string) SenderOptionFunc {
 	return func(l *LogzioSender) error {
-		l.url = fmt.Sprintf("%s/?token=%s", url, l.token)
-		l.debugLog("logziosender.go: Setting url to %s\n", l.url)
+		l.url = url
+		if l.token != "" {
+			l.url = fmt.Sprintf("%s/?token=%s", url, l.token)
+		}
+		l.debugLog("sender: Setting url to %s\n", l.url)
 		return nil
 	}
 }
@@ -219,14 +222,14 @@ func (l *LogzioSender) isEnoughDiskSpace() bool {
 	if l.checkDiskSpace {
 		diskStat, err := disk.Usage(l.dir)
 		if err != nil {
-			l.debugLog("logziosender.go: failed to get disk usage: %v\n", err)
+			l.debugLog("sender: failed to get disk usage: %v\n", err)
 			l.checkDiskSpace = false
 			return false
 		}
 
 		usage := float32(diskStat.UsedPercent)
 		if usage > l.diskThreshold {
-			l.debugLog("Logz.io: Dropping logs, as FS used space on %s is %g percent,"+
+			l.debugLog("sender: Dropping logs, as FS used space on %s is %g percent,"+
 				" and the drop threshold is %g percent\n",
 				l.dir, usage, l.diskThreshold)
 			l.droppedLogs++
@@ -242,7 +245,7 @@ func (l *LogzioSender) isEnoughDiskSpace() bool {
 func (l *LogzioSender) isEnoughMemory(dataSize uint64) bool {
 	usage := l.queue.Length()
 	if usage+dataSize >= l.inMemoryCapacity {
-		l.debugLog("Logz.io: Dropping logs, the max capacity is %d and %d is requested, Request size: %d\n", l.inMemoryCapacity, usage+dataSize, dataSize)
+		l.debugLog("sender: Dropping logs, the max capacity is %d and %d is requested, Request size: %d\n", l.inMemoryCapacity, usage+dataSize, dataSize)
 		l.droppedLogs++
 		return false
 	} else {
@@ -291,10 +294,10 @@ func (l *LogzioSender) makeHttpRequest(data bytes.Buffer, attempt int, c bool) i
 	if c {
 		req.Header.Add("Content-Encoding", "gzip")
 	}
-	l.debugLog("logziosender.go: Sending bulk of %v bytes\n", l.buf.Len())
+	l.debugLog("sender: Sending bulk of %v bytes\n", l.buf.Len())
 	resp, err := l.httpClient.Do(req)
 	if err != nil {
-		//l.debugLog("logziosender.go: Error sending logs to %s %s\n", l.url, err)
+		l.debugLog("sender: Error sending logs to %s %s\n", l.url, err)
 		return httpError
 	}
 
@@ -302,9 +305,9 @@ func (l *LogzioSender) makeHttpRequest(data bytes.Buffer, attempt int, c bool) i
 	statusCode := resp.StatusCode
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		l.debugLog("Error reading response body: %v", err)
+		l.debugLog("sender: Error reading response body: %v", err)
 	}
-	l.debugLog("logziosender.go: Response status code: %v \n", statusCode)
+	l.debugLog("sender: Response status code: %v \n", statusCode)
 	if statusCode == 200 {
 		l.droppedLogs = 0
 	}
@@ -335,16 +338,16 @@ func (l *LogzioSender) shouldRetry(statusCode int) bool {
 	retry := true
 	switch statusCode {
 	case http.StatusBadRequest:
-		l.debugLog("Got HTTP %d bad request, skip retry\n", statusCode)
+		l.debugLog("sender: Got HTTP %d bad request, skip retry\n", statusCode)
 		retry = false
 	case http.StatusNotFound:
-		l.debugLog("Got HTTP %d not found, skip retry\n", statusCode)
+		l.debugLog("sender: Got HTTP %d not found, skip retry\n", statusCode)
 		retry = false
 	case http.StatusUnauthorized:
-		l.debugLog("Got HTTP %d unauthorized, skip retry\n", statusCode)
+		l.debugLog("sender: Got HTTP %d unauthorized, skip retry\n", statusCode)
 		retry = false
 	case http.StatusForbidden:
-		l.debugLog("Got HTTP %d forbidden, skip retry\n", statusCode)
+		l.debugLog("sender: Got HTTP %d forbidden, skip retry\n", statusCode)
 		retry = false
 	case http.StatusOK:
 		retry = false
@@ -355,11 +358,10 @@ func (l *LogzioSender) shouldRetry(statusCode int) bool {
 // Drain - Send remaining logs
 func (l *LogzioSender) Drain() {
 	if l.draining.Load() {
-		l.debugLog("logziosender.go: Already draining\n")
+		l.debugLog("sender: Already draining\n")
 		return
 	}
 	l.mux.Lock()
-	l.debugLog("logziosender.go: draining queue\n")
 	defer l.mux.Unlock()
 	l.draining.Toggle()
 	defer l.draining.Toggle()
@@ -372,7 +374,7 @@ func (l *LogzioSender) Drain() {
 			toBackOff := false
 			for attempt := 0; attempt < sendRetries; attempt++ {
 				if toBackOff {
-					l.debugLog("logziosender.go: failed to send logs, trying again in %v\n", backOff)
+					l.debugLog("sender: failed to send logs, trying again in %v\n", backOff)
 					time.Sleep(backOff)
 					backOff *= 2
 				}
@@ -400,7 +402,7 @@ func (l *LogzioSender) dequeueUpToMaxBatchSize() {
 	for l.buf.Len() < maxSize && err == nil {
 		item, err := l.queue.Dequeue()
 		if err != nil {
-			l.debugLog("queue state: %s\n", err)
+			l.debugLog("sender: queue state: %s\n", err)
 		}
 		if item != nil {
 			// NewLine is appended tp item.Value
@@ -409,9 +411,8 @@ func (l *LogzioSender) dequeueUpToMaxBatchSize() {
 				break
 			}
 			_, err := l.buf.Write(append(item.Value, '\n'))
-			//l.debugLog("logziosender.go: Adding item with size %d (total buffSize: %d)\n", len(item.Value), l.buf.Len())
 			if err != nil {
-				l.errorLog("error writing to buffer %s", err)
+				l.errorLog("sender: error writing to buffer %s", err)
 			}
 		} else {
 			break
@@ -426,10 +427,10 @@ func (l *LogzioSender) Sync() error {
 }
 
 func (l *LogzioSender) requeue() {
-	l.debugLog("logziosender.go: Requeue %s", l.buf.String())
+	l.debugLog("sender: Requeue %s", l.buf.String())
 	err := l.Send(l.buf.Bytes())
 	if err != nil {
-		l.errorLog("could not requeue logs %s", err)
+		l.errorLog("sender: could not requeue logs %s", err)
 	}
 }
 

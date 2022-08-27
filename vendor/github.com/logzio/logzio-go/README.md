@@ -124,7 +124,8 @@ func main() {
 ## Data compression
 All bulks are compressed with gzip by default to disable compressing initialize the client with `SetCompress(false)`:
 ```go
-  logzio.New(token, SetCompress(false),
+  logzio.New(token,
+	  SetCompress(false),
   )
 ```
 
@@ -132,7 +133,6 @@ All bulks are compressed with gzip by default to disable compressing initialize 
 
 ```shell
 $ go test -v
-
 ```
 
 
@@ -142,8 +142,11 @@ $ go test -v
 
 ## Authors
 
-* **Douglas Chimento**  - [dougEfresh][me]
+* **Douglas Chimento**  - [dougEfresh](https://github.com/dougEfresh)
 * **Ido Halevi**  - [idohalevi](https://github.com/idohalevi)
+
+## Maintainers
+* **Yotam Loewenbach**  - [yotamloe](https://github.com/yotamloe)
 
 
 ## License
@@ -155,10 +158,18 @@ This project is licensed under the Apache License - see the [LICENSE](LICENSE) f
 * [logzio-java-sender](https://github.com/logzio/logzio-java-sender)
 
 
-## Changelog
+## Changelog 
+- v1.0.5
+    - Change `token` query parameter to optional for generic use
+    - Changed logging levels
+- v1.0.4
+    - Update gopsutil version (v3.21.6 -> v3.22.3)
+- v1.0.3
+    - Adjust buffer clearance
+    - Changed logging format
+- v1.0.2
+    - Update dependencies
 - v1.0.1
     - Add gzip compression
     - Add option for in Memory queue
-  
-- v1.0.2
-  - Update dependencies
+

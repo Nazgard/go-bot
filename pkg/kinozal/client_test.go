@@ -14,10 +14,12 @@ type HttpClientMock struct {
 
 func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 	var file *os.File
+	ct := "text/html"
 	switch req.URL.Path {
 	case "/browse.php":
 		file, _ = os.Open("./main_page.thtml")
 	case "/download.php":
+		ct = "application/x-bittorrent"
 		file, _ = os.Open("./[kinozal.tv]id1866821.torrent")
 	case "/details.php":
 		file, _ = os.Open("./details.thtml")
@@ -25,6 +27,9 @@ func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(bufio.NewReader(file)),
+		Header: http.Header{
+			"Content-Type": {ct},
+		},
 	}, nil
 }
 
@@ -90,7 +95,7 @@ func TestClient_getTorrent(t *testing.T) {
 				MainPageUrl: "http://kinozal.tv",
 			}},
 			wantErr: false,
-			want:    Element{
+			want: Element{
 				Name:    "Юрий Яковлев. Служу музам и только им! / 2008 / РУ / SATRip",
 				Torrent: bytes,
 			},

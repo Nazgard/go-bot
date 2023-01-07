@@ -4,13 +4,14 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/pkg"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/pkg"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -205,7 +206,9 @@ func (c Client) GetTorrent(url string) ([]byte, error) {
 }
 
 func (c Client) Listing(ch chan RootElement, interval time.Duration) {
+	log := config.GetLogger()
 	for {
+		log.Debugf("Read updates from LostFilm")
 		elements, _ := c.GetRoot()
 		for _, element := range elements {
 			ch <- element

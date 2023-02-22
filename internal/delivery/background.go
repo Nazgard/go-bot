@@ -2,14 +2,15 @@ package delivery
 
 import (
 	"bytes"
+	"strconv"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/repository"
 	kinozalService "makarov.dev/bot/internal/service"
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
 	lfClient "makarov.dev/bot/pkg/lostfilm"
-	"strconv"
-	"time"
 )
 
 // BackgroundJob интерфейс для всех периодических задач
@@ -53,8 +54,10 @@ func (c *kinozalBackgroundJob) Start() {
 		favorite, err := service.IsFavorite(id)
 		if err != nil {
 			log.Error(err.Error())
+			continue
 		}
 		if !favorite {
+			log.Tracef("Kinozal item %d is not favorite", id)
 			continue
 		}
 
@@ -69,6 +72,7 @@ func (c *kinozalBackgroundJob) Start() {
 			continue
 		}
 		if exist {
+			log.Tracef("Kinozal item %d - %s already stored", id, name)
 			continue
 		}
 
@@ -80,6 +84,7 @@ func (c *kinozalBackgroundJob) Start() {
 			continue
 		}
 
+		log.Infof("Store KZ item %s (%d)", element.Name, id)
 		err = service.Save(&repository.KinozalItem{
 			Id:       primitive.NewObjectID(),
 			Name:     element.Name,
@@ -87,7 +92,6 @@ func (c *kinozalBackgroundJob) Start() {
 			GridFsId: objectID,
 			Created:  time.Now(),
 		})
-		log.Infof("Store KZ item %s (%d)", element.Name, id)
 		if err != nil {
 			log.Error(err.Error())
 			continue

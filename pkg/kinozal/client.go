@@ -1,24 +1,27 @@
 package kinozal
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/pkg"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+
+	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/pkg"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/text/encoding/charmap"
 )
 
-const defaultMainPageUrl = "http://kinozal.tv"
-
 type Client struct {
-	Config ClientConfig
+	Config    ClientConfig
+	dlPageUrl string
 }
 
 type ClientConfig struct {
@@ -41,9 +44,9 @@ var client *Client
 
 func NewClient() *Client {
 	cfg := config.GetConfig().Kinozal
-	return &Client{ClientConfig{
+	return &Client{Config: ClientConfig{
 		HttpClient:  pkg.DefaultHttpClient,
-		MainPageUrl: defaultMainPageUrl,
+		MainPageUrl: cfg.Domain,
 		Cookie:      cfg.Cookie,
 	}}
 }
@@ -106,12 +109,19 @@ func (c Client) GetName(id int64) (string, error) {
 }
 
 func (c Client) GetElement(id int64) (*Element, error) {
+	if c.dlPageUrl == "" {
+		parse, err := url.Parse(c.Config.MainPageUrl)
+		if err != nil {
+			return nil, err
+		}
+		c.dlPageUrl = fmt.Sprintf("%s://dl.%s", parse.Scheme, parse.Host)
+	}
 	idStr := strconv.FormatInt(id, 10)
 	name, err := c.GetName(id)
 	if err != nil {
 		return nil, err
 	}
-	r, err := c.getRequest("http://dl.kinozal.tv/download.php?id=" + idStr)
+	r, err := c.getRequest(fmt.Sprintf("%s/download.php?id=%s", c.dlPageUrl, idStr))
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +133,9 @@ func (c Client) GetElement(id int64) (*Element, error) {
 }
 
 func (c Client) Listing(ch chan int64, interval time.Duration) {
+	log := config.GetLogger()
 	for {
+		log.Debugf("Read updates from Kinozal")
 		ids, err := c.GetRoot()
 		if err != nil {
 			time.Sleep(interval)
@@ -161,12 +173,28 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Cookie", c.Config.Cookie)
+	req.Header.Set("cookie", c.Config.Cookie)
+	req.Header.Set("referer", c.Config.MainPageUrl)
+	req.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36")
 
 	res, err := c.Config.HttpClient.Do(req)
 	if err != nil {
 		log.Error(err)
 		return nil, err
+	}
+
+	if res.StatusCode < 200 || res.StatusCode > 399 {
+		log.Errorf("Error while kinozal GET request. Status code %d. URL %s", res.StatusCode, url)
+		return nil, errors.New("wrong status code")
+	}
+
+	if strings.Contains(url, "://dl.") {
+		ct := res.Header.Get("Content-Type")
+		expectedCt := "application/x-bittorrent"
+		if ct != expectedCt {
+			log.Errorf("Error while kinozal GET request. Wrong content type %s. Expected %s", ct, expectedCt)
+			return nil, errors.New("wrong content type")
+		}
 	}
 
 	return res.Body, nil

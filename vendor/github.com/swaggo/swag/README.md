@@ -52,12 +52,9 @@ Swag converts Go annotations to Swagger Documentation 2.0. We've created a varie
 
 2. Download swag by using:
 ```sh
-$ go get -u github.com/swaggo/swag/cmd/swag
-
-# 1.16 or newer
 $ go install github.com/swaggo/swag/cmd/swag@latest
 ```
-To build from source you need [Go](https://golang.org/dl/) (1.15 or newer).
+To build from source you need [Go](https://golang.org/dl/) (1.16 or newer).
 
 Or download a pre-compiled binary from the [release page](https://github.com/swaggo/swag/releases).
 
@@ -88,6 +85,7 @@ USAGE:
    swag init [command options] [arguments...]
 
 OPTIONS:
+   --quiet, -q                            Make the logger quiet. (default: false)
    --generalInfo value, -g value          Go file path in which 'swagger general API Info' is written (default: "main.go")
    --dir value, -d value                  Directories you want to parse,comma separated and general-info file must be in the first one (default: "./")
    --exclude value                        Exclude directories and files when searching, comma separated
@@ -100,10 +98,12 @@ OPTIONS:
    --codeExampleFiles value, --cef value  Parse folder containing code example files to use for the x-codeSamples extension, disabled by default
    --parseInternal                        Parse go files in internal packages, disabled by default (default: false)
    --generatedTime                        Generate timestamp at the top of docs.go, disabled by default (default: false)
-   --requiredByDefault                    Set validation required for all fields by default (default: false)
    --parseDepth value                     Dependency parse depth (default: 100)
+   --requiredByDefault                    Set validation required for all fields by default (default: false)
    --instanceName value                   This parameter can be used to name different swagger document instances. It is optional.
    --overridesFile value                  File to read global type overrides from. (default: ".swaggo")
+   --parseGoList                          Parse dependency via 'go list' (default: true)
+   --tags value, -t value                 A comma-separated list of tags to filter the APIs for which the documentation is generated.Special case if the tag is prefixed with the '!' character then the APIs with that tag will be excluded
    --help, -h                             show help (default: false)
 ```
 
@@ -134,6 +134,7 @@ OPTIONS:
 - [flamingo](https://github.com/i-love-flamingo/swagger)
 - [fiber](https://github.com/gofiber/swagger)
 - [atreugo](https://github.com/Nerzal/atreugo-swagger)
+- [hertz](https://github.com/hertz-contrib/swagger)
 
 ## How to use it with Gin
 
@@ -313,6 +314,28 @@ swag fmt
 Exclude folder：
 ```shell
 swag fmt -d ./ --exclude ./internal
+```
+
+When using `swag fmt`, you need to ensure that you have a doc comment for the function to ensure correct formatting.
+This is due to `swag fmt` indenting swag comments with tabs, which is only allowed *after* a standard doc comment.
+
+For example, use
+
+```go
+// ListAccounts lists all existing accounts
+//
+//  @Summary      List accounts
+//  @Description  get accounts
+//  @Tags         accounts
+//  @Accept       json
+//  @Produce      json
+//  @Param        q    query     string  false  "name search by q"  Format(email)
+//  @Success      200  {array}   model.Account
+//  @Failure      400  {object}  httputil.HTTPError
+//  @Failure      404  {object}  httputil.HTTPError
+//  @Failure      500  {object}  httputil.HTTPError
+//  @Router       /accounts [get]
+func (c *Controller) ListAccounts(ctx *gin.Context) {
 ```
 
 ## Implementation Status
@@ -544,20 +567,20 @@ type Account struct {
 
 ### Function scoped struct declaration
 
-You can declare your request response structs inside a function body. 
+You can declare your request response structs inside a function body.
 You must have to follow the naming convention `<package-name>.<function-name>.<struct-name> `.
 
 ```go
 package main
 
-// @Param request body main.MyHandler.request true "query params" 
+// @Param request body main.MyHandler.request true "query params"
 // @Success 200 {object} main.MyHandler.response
 // @Router /test [post]
 func MyHandler() {
 	type request struct {
 		RequestField string
 	}
-	
+
 	type response struct {
 		ResponseField string
 	}

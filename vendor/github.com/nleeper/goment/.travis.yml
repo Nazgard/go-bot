@@ -1,0 +1,11 @@
+language: go
+
+go:
+  - tip
+
+before_install:
+  - go get -t ./...
+
+script:
+  - go test -v
+  - go build

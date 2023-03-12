@@ -7,6 +7,7 @@ import (
 
 	"github.com/Nazgard/logruzio"
 	nested "github.com/antonfisher/nested-logrus-formatter"
+	"github.com/nleeper/goment"
 	log "github.com/sirupsen/logrus"
 	"github.com/umputun/go-flags"
 	"golang.org/x/net/proxy"
@@ -24,6 +25,7 @@ type Config struct {
 	Twitch   Twitch   `group:"Twitch" env-namespace:"TWITCH"`
 	Kinozal  Kinozal  `group:"Kinozal" env-namespace:"KINOZAL"`
 	Proxy    Proxy    `group:"Proxy" env-namespace:"PROXY"`
+	Locale   string   `long:"Application localization" env:"LOCALE" description:"Application locale. Time print for example" default:"ru"`
 }
 
 type LostFilm struct {
@@ -81,6 +83,16 @@ func Init(logger *log.Logger) {
 	if _, err := flags.Parse(config); err != nil {
 		logger.Fatal(err)
 	}
+	initLogger(logger)
+	initProxy()
+	initMoment()
+}
+
+func GetConfig() *Config {
+	return config
+}
+
+func initLogger(logger *log.Logger) {
 	baseLogger = logger
 	logLevel, err := log.ParseLevel(config.LogLevel)
 	if err != nil {
@@ -95,30 +107,33 @@ func Init(logger *log.Logger) {
 		}
 		logger.AddHook(hook)
 	}
-
-	if config.Proxy.Enable {
-		var auth proxy.Auth
-		if config.Proxy.Socks5User != "" && config.Proxy.Socks5Password != "" {
-			auth = proxy.Auth{
-				User:     config.Proxy.Socks5User,
-				Password: config.Proxy.Socks5Password,
-			}
-		}
-		dealer, err := proxy.SOCKS5("tcp", config.Proxy.Socks5Addr, &auth, proxy.Direct)
-		if err != nil {
-			log.Errorf("Can't connect to the proxy: %s", err.Error())
-		}
-
-		dealContext := func(ctx context.Context, network, address string) (net.Conn, error) {
-			return dealer.Dial(network, address)
-		}
-
-		tr := &http.Transport{DialContext: dealContext}
-		pkg.DefaultHttpClient.Transport = tr
-		logger.Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
-	}
 }
 
-func GetConfig() *Config {
-	return config
+func initProxy() {
+	if !config.Proxy.Enable {
+		return
+	}
+	var auth proxy.Auth
+	if config.Proxy.Socks5User != "" && config.Proxy.Socks5Password != "" {
+		auth = proxy.Auth{
+			User:     config.Proxy.Socks5User,
+			Password: config.Proxy.Socks5Password,
+		}
+	}
+	dealer, err := proxy.SOCKS5("tcp", config.Proxy.Socks5Addr, &auth, proxy.Direct)
+	if err != nil {
+		baseLogger.Errorf("Can't connect to the proxy: %s", err.Error())
+	}
+
+	dealContext := func(ctx context.Context, network, address string) (net.Conn, error) {
+		return dealer.Dial(network, address)
+	}
+
+	tr := &http.Transport{DialContext: dealContext}
+	pkg.DefaultHttpClient.Transport = tr
+	baseLogger.Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
+}
+
+func initMoment() {
+	goment.SetLocale(config.Locale)
 }

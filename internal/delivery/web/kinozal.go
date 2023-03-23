@@ -12,7 +12,15 @@ type KinozalController struct {
 }
 
 func (c *KinozalController) Add(g *gin.RouterGroup) {
-	g.GET("rss", c.rss())
+	cacheMiddleware := CacheMiddleware(
+		200,
+		"application/xml; charset=utf-8",
+		func(c *gin.Context) string {
+			return "kz"
+		},
+		30*time.Minute,
+	)
+	g.GET("rss", cacheMiddleware, c.rss())
 }
 
 // @Tags Kinozal controller

@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/service"
+	"time"
 )
 
 const dateLayout = "Mon, 02 Jan 2006 15:04:05 -0700"
@@ -36,7 +37,15 @@ type LostFilmController struct {
 }
 
 func (c *LostFilmController) Add(g *gin.RouterGroup) {
-	g.GET("/rss", c.rss())
+	cacheMiddleware := CacheMiddleware(
+		200,
+		"application/xml; charset=utf-8",
+		func(c *gin.Context) string {
+			return "lf-" + c.Query("quality")
+		},
+		30*time.Minute,
+	)
+	g.GET("/rss", cacheMiddleware, c.rss())
 }
 
 // @Tags LostFilm controller

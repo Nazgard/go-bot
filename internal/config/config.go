@@ -26,6 +26,7 @@ type Config struct {
 	Kinozal  Kinozal  `group:"Kinozal" env-namespace:"KINOZAL"`
 	Proxy    Proxy    `group:"Proxy" env-namespace:"PROXY"`
 	Locale   string   `long:"Application localization" env:"LOCALE" description:"Application locale. Time print for example" default:"ru"`
+	Redis    Redis    `group:"Redis" env-namespace:"REDIS"`
 }
 
 type LostFilm struct {
@@ -75,6 +76,13 @@ type Proxy struct {
 	Socks5Addr     string `long:"proxy-socks5-addr" env:"ADDR" description:"Socks5 proxy address"`
 	Socks5User     string `long:"proxy-socks5-user" env:"USER" description:"Socks5 proxy username"`
 	Socks5Password string `long:"proxy-socks5-password" env:"PASSWORD" description:"Socks5 proxy password"`
+}
+
+type Redis struct {
+	Enable   bool   `long:"redis-enable" env:"ENABLE" description:"Redis toggle"`
+	Addr     string `long:"redis-addr" env:"ADDR" description:"Redis server address"`
+	Password string `long:"redis-password" env:"PASSWORD" description:"Redis server password"`
+	DB       int    `long:"redis-db" env:"DB" default:"0" description:"Redis server db"`
 }
 
 var config = &Config{}

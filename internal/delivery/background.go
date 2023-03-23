@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"bytes"
+	"context"
 	"strconv"
 	"time"
 
@@ -85,6 +86,9 @@ func (c *kinozalBackgroundJob) Start() {
 		}
 
 		log.Infof("Store KZ item %s (%d)", element.Name, id)
+		if config.GetConfig().Redis.Enable {
+			repository.GetRedis().Del(context.Background(), "kz")
+		}
 		err = service.Save(&repository.KinozalItem{
 			Id:       primitive.NewObjectID(),
 			Name:     element.Name,

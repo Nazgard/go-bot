@@ -3,6 +3,10 @@ package service
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"github.com/mattn/go-mastodon"
+	"io"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -145,18 +149,68 @@ func (s *LostFilmServiceImpl) StoreElement(element lostfilm.RootElement) {
 		}
 	}
 	if len(item.ItemFiles) == 3 || (len(item.ItemFiles) > 0 && item.RetryCount >= lfCfg.MaxRetries) {
-		err = s.Telegram.SendMessageLostFilmChannel(item)
-		if err != nil {
-			log.Errorf("%s (channel id %d) %s",
-				"Error while send lostfilm item to telegram channel",
-				config.GetConfig().Telegram.LostFilmUpdateChannel,
-				err.Error(),
-			)
-			return
-		}
+		go s.sendToTelegram(item)
+		go sendToMastodon(*item)
 	}
 }
 
 func (s *LostFilmServiceImpl) Exist(page string) (bool, error) {
 	return s.Repository.Exists(page)
+}
+
+func (s *LostFilmServiceImpl) sendToTelegram(item *repository.Item) {
+	err := s.Telegram.SendMessageLostFilmChannel(item)
+	if err != nil {
+		config.GetLogger().Errorf("%s (channel id %d) %s",
+			"Error while send lostfilm item to telegram channel",
+			config.GetConfig().Telegram.LostFilmUpdateChannel,
+			err.Error(),
+		)
+		return
+	}
+}
+
+func sendToMastodon(item repository.Item) {
+	if len(item.ItemFiles) <= 0 {
+		return
+	}
+	client := GetMastodonClient()
+	posterRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https:%s", item.Poster), nil)
+	if err != nil {
+		config.GetLogger().Errorf("Error while download poster for Mastodon status %s", err.Error())
+		return
+	}
+	response, err := client.Client.Do(posterRequest)
+	if err != nil {
+		config.GetLogger().Errorf("Error while download poster for Mastodon status %s", err.Error())
+		return
+	}
+	defer response.Body.Close()
+	imgBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		config.GetLogger().Errorf("Error while download poster for Mastodon status %s", err.Error())
+		return
+	}
+	attachment, err := client.UploadMediaFromBytes(context.Background(), imgBytes)
+	if err != nil {
+		config.GetLogger().Errorf("Error while upload media for Mastodon status %s", err.Error())
+		return
+	}
+
+	status := fmt.Sprintf("%s. %s\n", item.Name, item.EpisodeNameFull)
+	domain := config.GetConfig().Web.Domain
+	for _, f := range item.ItemFiles {
+		status += fmt.Sprintf("\n%s %s/dl/%s", f.Quality, domain, f.GridFsId.Hex())
+	}
+	_, err = client.PostStatus(context.Background(), &mastodon.Toot{
+		Status:     status,
+		Visibility: mastodon.VisibilityPublic,
+		Language:   "ru",
+		MediaIDs:   []mastodon.ID{attachment.ID},
+	})
+	if err != nil {
+		config.GetLogger().Errorf("Error while send Mastodon status %s", err.Error())
+	} else {
+		config.GetLogger().Debugf("Posted status to Mastodon for item %s", item.Page)
+	}
 }

@@ -262,6 +262,7 @@ func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error 
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	markups := tgbotapi.InlineKeyboardMarkup{
 		InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0),

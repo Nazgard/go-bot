@@ -27,6 +27,7 @@ type Config struct {
 	Proxy    Proxy    `group:"Proxy" env-namespace:"PROXY"`
 	Locale   string   `long:"Application localization" env:"LOCALE" description:"Application locale. Time print for example" default:"ru"`
 	Redis    Redis    `group:"Redis" env-namespace:"REDIS"`
+	Mastodon Mastodon `group:"Mastodon" env-namespace:"MASTODON"`
 }
 
 type LostFilm struct {
@@ -83,6 +84,16 @@ type Redis struct {
 	Addr     string `long:"redis-addr" env:"ADDR" description:"Redis server address"`
 	Password string `long:"redis-password" env:"PASSWORD" description:"Redis server password"`
 	DB       int    `long:"redis-db" env:"DB" default:"0" description:"Redis server db"`
+}
+
+type Mastodon struct {
+	Enable       bool   `long:"mastodon-enable" env:"ENABLE" description:"Mastodon integration toggle"`
+	Server       string `long:"mastodon-server" env:"SERVER" description:"Mastodon server addr"`
+	Email        string `long:"mastodon-email" env:"EMAIL" description:"Mastodon user email"`
+	Password     string `long:"mastodon-password" env:"PASSWORD" description:"Mastodon user password"`
+	ClientKey    string `long:"mastodon-client-key" env:"CLIENT_KEY" description:"Mastodon client key"`
+	ClientSecret string `long:"mastodon-client-secret" env:"CLIENT_SECRET" description:"Mastodon client secret"`
+	AccessToken  string `long:"mastodon-access-token" env:"ACCESS_TOKEN" description:"Mastodon access token"`
 }
 
 var config = &Config{}

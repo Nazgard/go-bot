@@ -18,6 +18,7 @@ type KinozalService interface {
 	LastKinozalEpisodes(ctx context.Context) ([]repository.KinozalItem, error)
 	AddFavorite(id int64) error
 	DeleteFavorite(id int64) error
+	SendToTelegram(item *repository.KinozalItem)
 }
 
 type LostFilmService interface {
@@ -29,6 +30,7 @@ type LostFilmService interface {
 type TelegramService interface {
 	Start()
 	SendMessageLostFilmChannel(lfItem *repository.Item) error
+	SendMessageKinozalChannel(kzItem *repository.KinozalItem) error
 }
 
 type TwitchService interface {

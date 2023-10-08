@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"makarov.dev/bot/internal/config"
 	"sync"
 
 	"makarov.dev/bot/internal/repository"
@@ -12,10 +13,11 @@ var kinozalService KinozalService
 
 type KinozalServiceImpl struct {
 	Repository repository.KinozalRepository
+	Telegram   TelegramService
 }
 
 func NewKinozalService() *KinozalServiceImpl {
-	return &KinozalServiceImpl{Repository: repository.GetKinozalRepository()}
+	return &KinozalServiceImpl{Repository: repository.GetKinozalRepository(), Telegram: GetTelegramService()}
 }
 
 func GetKinozalService() KinozalService {
@@ -49,4 +51,16 @@ func (s *KinozalServiceImpl) AddFavorite(id int64) error {
 
 func (s *KinozalServiceImpl) DeleteFavorite(id int64) error {
 	return s.Repository.DeleteFavorite(id)
+}
+
+func (s *KinozalServiceImpl) SendToTelegram(item *repository.KinozalItem) {
+	err := s.Telegram.SendMessageKinozalChannel(item)
+	if err != nil {
+		config.GetLogger().Errorf("%s (channel id %d) %s",
+			"Error while send kinozal item to telegram channel",
+			config.GetConfig().Telegram.KinozalUpdateChannel,
+			err.Error(),
+		)
+		return
+	}
 }

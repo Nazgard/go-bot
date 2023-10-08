@@ -89,17 +89,19 @@ func (c *kinozalBackgroundJob) Start() {
 		if config.GetConfig().Redis.Enable {
 			repository.GetRedis().Del(context.Background(), "kz")
 		}
-		err = service.Save(&repository.KinozalItem{
+		item := repository.KinozalItem{
 			Id:       primitive.NewObjectID(),
 			Name:     element.Name,
 			DetailId: id,
 			GridFsId: objectID,
 			Created:  time.Now(),
-		})
+		}
+		err = service.Save(&item)
 		if err != nil {
 			log.Error(err.Error())
 			continue
 		}
+		service.SendToTelegram(&item)
 	}
 }
 

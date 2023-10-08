@@ -297,3 +297,14 @@ func (s *ServiceImpl) SendMessageLostFilmChannel(lfItem *repository.Item) error 
 	}
 	return nil
 }
+
+func (s *ServiceImpl) SendMessageKinozalChannel(kzItem *repository.KinozalItem) error {
+	cfg := config.GetConfig()
+	if !cfg.Kinozal.Enable {
+		return nil
+	}
+
+	_, err := s.mrBot.Send(tgbotapi.NewMessage(cfg.Telegram.KinozalUpdateChannel,
+		fmt.Sprintf("Вышла новая серия - %s", kzItem.Name)))
+	return err
+}

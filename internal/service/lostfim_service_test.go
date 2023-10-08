@@ -123,6 +123,10 @@ func (t *telegramServiceMock) SendMessageLostFilmChannel(lfItem *repository.Item
 	return nil
 }
 
+func (t *telegramServiceMock) SendMessageKinozalChannel(kzItem *repository.KinozalItem) error {
+	return nil
+}
+
 var fakeRootElement = lostfilm.RootElement{
 	Page:          "/series/Heels/season_1/episode_4/",
 	Name:          "Хилы",

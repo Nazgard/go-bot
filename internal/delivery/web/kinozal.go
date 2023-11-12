@@ -3,12 +3,11 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/service"
+	"makarov.dev/bot/internal/integration/kinozal"
 	"time"
 )
 
 type KinozalController struct {
-	Service service.KinozalService
 }
 
 func (c *KinozalController) Add(g *gin.RouterGroup) {
@@ -31,7 +30,7 @@ func (c *KinozalController) Add(g *gin.RouterGroup) {
 // @Router /kinozal/rss [get]
 func (c *KinozalController) rss() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		episodes, err := c.Service.LastKinozalEpisodes(ctx)
+		episodes, err := kinozal.LastEpisodes(ctx)
 		if err != nil {
 			NewError(ctx, 500, err)
 			return

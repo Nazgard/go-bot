@@ -40,11 +40,14 @@ type ItemFile struct {
 	GridFsId    primitive.ObjectID `bson:"grid_fs_id"`
 }
 
-var client = lostfilm.Client{Config: lostfilm.ClientConfig{
-	HttpClient:  pkg.DefaultHttpClient,
-	MainPageUrl: config.GetConfig().LostFilm.Domain,
-	Cookie:      http.Cookie{Name: config.GetConfig().LostFilm.CookieName, Value: config.GetConfig().LostFilm.CookieVal},
-}}
+var Client = lostfilm.Client{
+	Config: lostfilm.ClientConfig{
+		HttpClient:  pkg.DefaultHttpClient,
+		MainPageUrl: config.GetConfig().LostFilm.Domain,
+		Cookie:      http.Cookie{Name: config.GetConfig().LostFilm.CookieName, Value: config.GetConfig().LostFilm.CookieVal},
+	},
+	Logger: config.GetLogger(),
+}
 
 func StoreElement(element lostfilm.RootElement) {
 	cfg := config.GetConfig()
@@ -60,13 +63,13 @@ func StoreElement(element lostfilm.RootElement) {
 	} else {
 		log.Infof("Try append torrent %s", element.Page)
 	}
-	episode, err := client.GetEpisode(element.Page)
+	episode, err := Client.GetEpisode(element.Page)
 	if err != nil {
 		log.Errorf("Error while get episode %s", err.Error())
 		return
 	}
 
-	refs, err := client.GetTorrentRefs(episode.Id)
+	refs, err := Client.GetTorrentRefs(episode.Id)
 	if err != nil {
 		log.Errorf("Error while get episode refs %s", err.Error())
 		return
@@ -99,7 +102,7 @@ func StoreElement(element lostfilm.RootElement) {
 		if nameFull == "" {
 			nameFull = ref.NameFull
 		}
-		torrent, err := client.GetTorrent(ref.TorrentUrl)
+		torrent, err := Client.GetTorrent(ref.TorrentUrl)
 		if err != nil {
 			log.Errorf("Error while get torrent %s", err.Error())
 			return

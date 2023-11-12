@@ -4,13 +4,20 @@ import (
 	"github.com/Nazgard/logruzio"
 	nested "github.com/antonfisher/nested-logrus-formatter"
 	log "github.com/sirupsen/logrus"
+	"sync"
 )
 
 var baseLogger *log.Logger
+var loggerOnce sync.Once
 
 func GetLogger() *log.Logger {
 	if baseLogger == nil {
-		return log.StandardLogger()
+		loggerOnce.Do(func() {
+			if baseLogger != nil {
+				return
+			}
+			Init(log.New())
+		})
 	}
 	return baseLogger
 }

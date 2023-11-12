@@ -2,12 +2,13 @@ package config
 
 import (
 	"context"
+	"github.com/umputun/go-flags"
 	"net"
 	"net/http"
+	"sync"
 
 	"github.com/nleeper/goment"
 	log "github.com/sirupsen/logrus"
-	"github.com/umputun/go-flags"
 	"golang.org/x/net/proxy"
 	"makarov.dev/bot/pkg"
 )
@@ -95,18 +96,31 @@ type MastodonConfig struct {
 	AccessToken  string `long:"mastodon-access-token" env:"ACCESS_TOKEN" description:"Mastodon access token"`
 }
 
-var config = &Config{}
+var config *Config
+var initOnce sync.Once
+var configOnce sync.Once
 
 func Init(logger *log.Logger) {
-	if _, err := flags.Parse(config); err != nil {
-		logger.Fatal(err)
-	}
-	initLogger(logger)
-	initProxy()
-	initMoment()
+	initOnce.Do(func() {
+		config = &Config{}
+		if _, err := flags.Parse(config); err != nil {
+			logger.Fatal(err)
+		}
+		initLogger(logger)
+		initProxy()
+		initMoment()
+	})
 }
 
 func GetConfig() *Config {
+	if config == nil {
+		configOnce.Do(func() {
+			if config != nil {
+				return
+			}
+			Init(log.New())
+		})
+	}
 	return config
 }
 

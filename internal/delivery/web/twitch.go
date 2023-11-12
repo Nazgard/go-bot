@@ -2,11 +2,10 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
-	"makarov.dev/bot/internal/repository"
+	"makarov.dev/bot/internal/integration/twitch"
 )
 
 type TwitchController struct {
-	Repository *repository.TwitchChatRepositoryImpl
 }
 
 func (c *TwitchController) Add(g *gin.RouterGroup) {
@@ -23,7 +22,7 @@ func (c *TwitchController) Add(g *gin.RouterGroup) {
 // @Router /twitch/messages [get]
 func (c *TwitchController) messages() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		data, err := c.Repository.GetLastMessages(ctx.Query("channel"), ctx.Query("limit"))
+		data, err := twitch.GetLastMessages(ctx.Query("channel"), ctx.Query("limit"))
 		if err != nil {
 			NewError(ctx, 500, err)
 			return
@@ -40,7 +39,7 @@ func (c *TwitchController) messages() func(ctx *gin.Context) {
 // @Router /twitch/tushqa [get]
 func (c *TwitchController) tushqaQuotes() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		data, err := c.Repository.GetTushqaQuotes(ctx.Query("limit"))
+		data, err := twitch.GetTushqaQuotes(ctx.Query("limit"))
 		if err != nil {
 			NewError(ctx, 500, err)
 			return

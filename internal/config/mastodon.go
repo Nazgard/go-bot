@@ -1,8 +1,7 @@
-package service
+package config
 
 import (
 	"github.com/mattn/go-mastodon"
-	"makarov.dev/bot/internal/config"
 	"sync"
 )
 
@@ -10,7 +9,7 @@ var onceMastodonClient = sync.Once{}
 var mastodonClient *mastodon.Client
 
 func NewMastodonClient() *mastodon.Client {
-	cfg := config.GetConfig().Mastodon
+	cfg := GetConfig().Mastodon
 	mastodonClient = mastodon.NewClient(&mastodon.Config{
 		Server:       cfg.Server,
 		ClientID:     cfg.ClientKey,

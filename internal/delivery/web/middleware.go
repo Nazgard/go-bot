@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/repository"
 	"time"
 )
 
@@ -36,7 +35,7 @@ func CacheMiddleware(okCode int, contentType string, keyGen func(c *gin.Context)
 		c.Writer = blw
 
 		key := keyGen(c)
-		b, err := repository.GetRedis().Get(c, key).Bytes()
+		b, err := config.GetRedis().Get(c, key).Bytes()
 		if err == nil || err != redis.Nil {
 			config.GetLogger().Tracef("Used redis cache for %s", key)
 			c.Data(okCode, contentType, b)
@@ -48,7 +47,7 @@ func CacheMiddleware(okCode int, contentType string, keyGen func(c *gin.Context)
 
 		go func() {
 			config.GetLogger().Tracef("Set cache %s", key)
-			repository.GetRedis().Set(context.Background(), key, blw.body.String(), ex)
+			config.GetRedis().Set(context.Background(), key, blw.body.String(), ex)
 		}()
 
 	}

@@ -1,8 +1,11 @@
 package web
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -11,8 +14,6 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"makarov.dev/bot/docs"
 	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/repository"
-	"makarov.dev/bot/internal/service"
 )
 
 type Controller interface {
@@ -34,7 +35,7 @@ type HTTPError struct {
 	Message string `json:"message" example:"status bad request"`
 }
 
-func StartWeb() {
+func StartWeb(ctx context.Context) {
 	cfg := config.GetConfig()
 	webCfg := cfg.Web
 	log := config.GetLogger()
@@ -68,39 +69,48 @@ func StartWeb() {
 		pprof.Register(r, "dev/pprof")
 	}
 
-	lfService := service.GetLostFilmService()
-	kzService := service.GetKinozalService()
-	fsService := service.GetFileService()
-	tRepository := repository.GetTwitchChatRepository()
-
 	lfGroup := r.Group("/lostfilm")
 	{
-		ctr := LostFilmController{Service: lfService}
+		ctr := LostFilmController{}
 		ctr.Add(lfGroup)
 	}
 
 	kinozalGroup := r.Group("/kinozal")
 	{
-		ctr := KinozalController{Service: kzService}
+		ctr := KinozalController{}
 		ctr.Add(kinozalGroup)
 	}
 
 	fileGroup := r.Group("/dl")
 	{
-		ctr := FileController{FileService: fsService}
+		ctr := FileController{}
 		ctr.Add(fileGroup)
 	}
 
 	twitchGroup := r.Group("/twitch")
 	{
-		ctr := TwitchController{Repository: tRepository}
+		ctr := TwitchController{}
 		ctr.Add(twitchGroup)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	err := r.Run(webCfg.Addr)
-	if err != nil {
-		panic(err)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
 	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	<-ctx.Done()
+	err := srv.Shutdown(ctx)
+	if err != nil {
+		log.Fatalf("Error while shutdown web %s", err.Error())
+	}
+
+	log.Infof("Web stopped")
 }

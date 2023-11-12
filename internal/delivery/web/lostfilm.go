@@ -3,7 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/internal/service"
+	"makarov.dev/bot/internal/integration/lostfilm"
 	"time"
 )
 
@@ -33,7 +33,6 @@ type RssChannelItem struct {
 }
 
 type LostFilmController struct {
-	Service service.LostFilmService
 }
 
 func (c *LostFilmController) Add(g *gin.RouterGroup) {
@@ -58,7 +57,7 @@ func (c *LostFilmController) Add(g *gin.RouterGroup) {
 func (c *LostFilmController) rss() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		quality := ctx.Query("quality")
-		episodes, err := c.Service.LastEpisodes(ctx)
+		episodes, err := lostfilm.FindLatest(ctx)
 		if err != nil {
 			NewError(ctx, 500, err)
 			return

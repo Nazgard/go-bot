@@ -1,8 +1,7 @@
-package repository
+package config
 
 import (
 	"github.com/redis/go-redis/v9"
-	"makarov.dev/bot/internal/config"
 	"sync"
 )
 
@@ -10,7 +9,7 @@ var onceRdb sync.Once
 var rdb *redis.Client
 
 func NewRedis() {
-	cfg := config.GetConfig().Redis
+	cfg := GetConfig().Redis
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,

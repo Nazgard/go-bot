@@ -4,15 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"makarov.dev/bot/internal/config"
+	"makarov.dev/bot/internal/integration/file"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"makarov.dev/bot/internal/service"
 )
 
 type FileController struct {
-	FileService service.FileService
 }
 
 func (c *FileController) Add(g *gin.RouterGroup) {
@@ -41,21 +40,21 @@ func (c *FileController) downloadFile() func(ctx *gin.Context) {
 			return
 		}
 
-		reader, err := c.FileService.GetFile(&objectID)
+		reader, err := file.GetFile(&objectID)
 		if err != nil {
 			NewError(ctx, 500, err)
 			return
 		}
 		go func() {
-			err = c.FileService.LogDownload(ctx, objectID)
+			err = file.Log(ctx, objectID)
 			if err != nil {
 				log.Error(fmt.Sprintf("Error while log download fileId=%s", objectID), err.Error())
 			}
 		}()
-		file := reader.GetFile()
+		f := reader.GetFile()
 		extraHeaders := map[string]string{
-			"Content-Disposition": "attachment; filename=\"" + file.Name + "\"",
+			"Content-Disposition": "attachment; filename=\"" + f.Name + "\"",
 		}
-		ctx.DataFromReader(http.StatusOK, file.Length, file.Name, reader, extraHeaders)
+		ctx.DataFromReader(http.StatusOK, f.Length, f.Name, reader, extraHeaders)
 	}
 }

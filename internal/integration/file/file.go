@@ -1,17 +1,17 @@
-package repository
+package file
 
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"makarov.dev/bot/internal/config"
-	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type FileDownloadEntry struct {
+type DownloadEntry struct {
 	Id         primitive.ObjectID `bson:"_id"`
 	FileId     primitive.ObjectID `bson:"file_id"`
 	RemoteAddr string             `bson:"remote_addr"`
@@ -19,30 +19,10 @@ type FileDownloadEntry struct {
 	Created    time.Time          `bson:"created"`
 }
 
-type FileRepositoryImpl struct {
-	Database *mongo.Database
-}
-
-var onceFileRepository = sync.Once{}
-var fileRepository FileRepository
-
-func NewFileRepository() *FileRepositoryImpl {
-	return &FileRepositoryImpl{Database: GetDatabase()}
-}
-
-func GetFileRepository() FileRepository {
-	if fileRepository == nil {
-		onceFileRepository.Do(func() {
-			fileRepository = NewFileRepository()
-		})
-	}
-	return fileRepository
-}
-
-func (f *FileRepositoryImpl) Log(ctx *gin.Context, fileId primitive.ObjectID) error {
+func Log(ctx *gin.Context, fileId primitive.ObjectID) error {
 	log := config.GetLogger()
-	collection := f.getCollection()
-	entry := FileDownloadEntry{
+	collection := getCollection()
+	entry := DownloadEntry{
 		Id:         primitive.NewObjectID(),
 		FileId:     fileId,
 		RemoteAddr: ctx.ClientIP(),
@@ -57,6 +37,10 @@ func (f *FileRepositoryImpl) Log(ctx *gin.Context, fileId primitive.ObjectID) er
 	return nil
 }
 
-func (f *FileRepositoryImpl) getCollection() *mongo.Collection {
-	return f.Database.Collection("file_downloads")
+func GetFile(fileId *primitive.ObjectID) (*gridfs.DownloadStream, error) {
+	return config.GetBucket().OpenDownloadStream(fileId)
+}
+
+func getCollection() *mongo.Collection {
+	return config.GetDatabase().Collection("file_downloads")
 }

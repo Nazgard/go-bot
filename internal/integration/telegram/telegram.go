@@ -85,12 +85,19 @@ func Start(ctx context.Context) {
 
 func route(msg *tgbotapi.MessageConfig) {
 	txt := strings.TrimSpace(msg.Text)
-	fnc, e := router[txt]
+	wordSplit := strings.Split(txt, " ")
+	if len(wordSplit) < 1 {
+		msg.Text = "empty cmd"
+		return
+	}
+	cmdWithSlash := strings.TrimSpace(wordSplit[0])
+	fnc, e := router[cmdWithSlash]
 	if !e {
 		return
 	}
 
-	txt = strings.ReplaceAll(msg.Text, txt, "")
+	txt = strings.ReplaceAll(msg.Text, cmdWithSlash, "")
+	txt = strings.TrimSpace(txt)
 	msg.Text = fnc(txt)
 }
 

@@ -3,17 +3,14 @@ package kinozal
 import (
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-
-	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/pkg"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/text/encoding/charmap"
@@ -22,6 +19,7 @@ import (
 type Client struct {
 	Config    ClientConfig
 	dlPageUrl string
+	Logger    *logrus.Logger
 }
 
 type ClientConfig struct {
@@ -37,27 +35,6 @@ type HttpClient interface {
 type Element struct {
 	Name    string
 	Torrent []byte
-}
-
-var once = sync.Once{}
-var client *Client
-
-func NewClient() *Client {
-	cfg := config.GetConfig().Kinozal
-	return &Client{Config: ClientConfig{
-		HttpClient:  pkg.DefaultHttpClient,
-		MainPageUrl: cfg.Domain,
-		Cookie:      cfg.Cookie,
-	}}
-}
-
-func GetDefaultClient() *Client {
-	if client == nil {
-		once.Do(func() {
-			client = NewClient()
-		})
-	}
-	return client
 }
 
 func (c Client) GetRoot() ([]int64, error) {
@@ -133,9 +110,8 @@ func (c Client) GetElement(id int64) (*Element, error) {
 }
 
 func (c Client) Listing(ch chan int64, interval time.Duration) {
-	log := config.GetLogger()
 	for {
-		log.Debugf("Read updates from Kinozal")
+		c.Logger.Debugf("Read updates from Kinozal")
 		ids, err := c.GetRoot()
 		if err != nil {
 			time.Sleep(interval)
@@ -149,16 +125,15 @@ func (c Client) Listing(ch chan int64, interval time.Duration) {
 }
 
 func (c Client) getDoc(url string) (*goquery.Document, error) {
-	log := config.GetLogger()
 	body, err := c.getRequest(url)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.Error(err.Error())
+			c.Logger.Error(err.Error())
 		}
 	}(body)
 
@@ -166,10 +141,9 @@ func (c Client) getDoc(url string) (*goquery.Document, error) {
 }
 
 func (c Client) getRequest(url string) (io.ReadCloser, error) {
-	log := config.GetLogger()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -179,12 +153,12 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 
 	res, err := c.Config.HttpClient.Do(req)
 	if err != nil {
-		log.Error(err)
+		c.Logger.Error(err)
 		return nil, err
 	}
 
 	if res.StatusCode < 200 || res.StatusCode > 399 {
-		log.Errorf("Error while kinozal GET request. Status code %d. URL %s", res.StatusCode, url)
+		c.Logger.Errorf("Error while kinozal GET request. Status code %d. URL %s", res.StatusCode, url)
 		return nil, errors.New("wrong status code")
 	}
 
@@ -192,7 +166,7 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 		ct := res.Header.Get("Content-Type")
 		expectedCt := "application/x-bittorrent"
 		if ct != expectedCt {
-			log.Errorf("Error while kinozal GET request. Wrong content type %s. Expected %s", ct, expectedCt)
+			c.Logger.Errorf("Error while kinozal GET request. Wrong content type %s. Expected %s", ct, expectedCt)
 			return nil, errors.New("wrong content type")
 		}
 	}

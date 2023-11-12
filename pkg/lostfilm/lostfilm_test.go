@@ -2,6 +2,7 @@ package lostfilm
 
 import (
 	"bufio"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
@@ -126,5 +127,5 @@ func getClient() Client {
 	cfg := ClientConfig{
 		HttpClient: &HttpClientMock{},
 	}
-	return Client{Config: cfg}
+	return Client{Config: cfg, Logger: logrus.New()}
 }

@@ -2,16 +2,13 @@ package lostfilm
 
 import (
 	"errors"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-
-	"makarov.dev/bot/internal/config"
-	"makarov.dev/bot/pkg"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -24,6 +21,7 @@ type ClientConfig struct {
 
 type Client struct {
 	Config ClientConfig
+	Logger *logrus.Logger
 }
 
 type HttpClient interface {
@@ -68,32 +66,10 @@ type FullItemTorrent struct {
 	Torrent     []byte `json:"-"`
 }
 
-var once = sync.Once{}
-var client *Client
-
-func NewClient() *Client {
-	cfg := config.GetConfig().LostFilm
-	return &Client{Config: ClientConfig{
-		HttpClient:  pkg.DefaultHttpClient,
-		MainPageUrl: getMainPageUrl(),
-		Cookie:      http.Cookie{Name: cfg.CookieName, Value: cfg.CookieVal},
-	}}
-}
-
-func GetDefaultClient() *Client {
-	if client == nil {
-		once.Do(func() {
-			client = NewClient()
-		})
-	}
-	return client
-}
-
 func (c Client) GetRoot() ([]RootElement, error) {
-	log := config.GetLogger()
-	doc, err := c.getDoc(getMainPageUrl() + "/new")
+	doc, err := c.getDoc(c.Config.MainPageUrl + "/new")
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 	rows := doc.Find(".row")
@@ -101,7 +77,7 @@ func (c Client) GetRoot() ([]RootElement, error) {
 	parseRow := func(i int, row *goquery.Selection) {
 		link, foundLink := row.Find("a").Eq(0).Attr("href")
 		if !foundLink {
-			log.Debug("Not found link")
+			c.Logger.Debug("Not found link")
 			return
 		}
 		posterLink, foundPoster := row.Find(".thumb").Eq(0).Attr("src")
@@ -134,10 +110,9 @@ func (c Client) GetRoot() ([]RootElement, error) {
 }
 
 func (c Client) GetEpisode(page string) (*Episode, error) {
-	log := config.GetLogger()
-	doc, err := c.getDoc(getMainPageUrl() + page)
+	doc, err := c.getDoc(c.Config.MainPageUrl + page)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 	onClick, found := doc.Find(".external-btn").Attr("onclick")
@@ -148,7 +123,7 @@ func (c Client) GetEpisode(page string) (*Episode, error) {
 	rawId := strings.Replace(strings.Replace(onClick, "PlayEpisode('", "", -1), "')", "", -1)
 	id, err := strconv.ParseInt(rawId, 10, 64)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -156,10 +131,9 @@ func (c Client) GetEpisode(page string) (*Episode, error) {
 }
 
 func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
-	log := config.GetLogger()
-	doc, err := c.getDoc(getMainPageUrl() + "/v_search.php?a=" + strconv.FormatInt(episodeId, 10))
+	doc, err := c.getDoc(c.Config.MainPageUrl + "/v_search.php?a=" + strconv.FormatInt(episodeId, 10))
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -180,7 +154,7 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 		quality := strings.TrimSpace(s.Find(".inner-box--label").Text())
 		url, exists := s.Find("a").Eq(0).Attr("href")
 		if !exists {
-			log.Error("url not exist")
+			c.Logger.Error("url not exist")
 			return
 		}
 		description := s.Find(".inner-box--desc").Text()
@@ -196,19 +170,17 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 }
 
 func (c Client) GetTorrent(url string) ([]byte, error) {
-	log := config.GetLogger()
 	body, err := c.getRequest(url)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 	return ioutil.ReadAll(body)
 }
 
 func (c Client) Listing(ch chan RootElement, interval time.Duration) {
-	log := config.GetLogger()
 	for {
-		log.Debugf("Read updates from LostFilm")
+		c.Logger.Debugf("Read updates from LostFilm")
 		elements, _ := c.GetRoot()
 		for _, element := range elements {
 			ch <- element
@@ -217,15 +189,10 @@ func (c Client) Listing(ch chan RootElement, interval time.Duration) {
 	}
 }
 
-func getMainPageUrl() string {
-	return config.GetConfig().LostFilm.Domain
-}
-
 func (c Client) getRequest(url string) (io.ReadCloser, error) {
-	log := config.GetLogger()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -236,7 +203,7 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 
 	res, err := c.Config.HttpClient.Do(req)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -244,16 +211,15 @@ func (c Client) getRequest(url string) (io.ReadCloser, error) {
 }
 
 func (c Client) getDoc(url string) (*goquery.Document, error) {
-	log := config.GetLogger()
 	body, err := c.getRequest(url)
 	if err != nil {
-		log.Error(err.Error())
+		c.Logger.Error(err.Error())
 		return nil, err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.Error(err.Error())
+			c.Logger.Error(err.Error())
 		}
 	}(body)
 

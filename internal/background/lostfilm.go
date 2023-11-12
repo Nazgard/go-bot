@@ -23,9 +23,8 @@ func (c *lostFilmBackgroundJob) Start() {
 		return
 	}
 	ch := make(chan lfClient.RootElement)
-	client := lfClient.GetDefaultClient()
 
-	go client.Listing(ch, time.Minute)
+	go lostfilm.Client.Listing(ch, time.Minute)
 
 	for element := range ch {
 		select {

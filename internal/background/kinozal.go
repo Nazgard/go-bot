@@ -8,6 +8,7 @@ import (
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/integration/kinozal"
 	"makarov.dev/bot/internal/integration/telegram"
+	"makarov.dev/bot/pkg"
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
 	"strconv"
 	"strings"
@@ -32,7 +33,14 @@ func (c *kinozalBackgroundJob) Start() {
 	addTelegramCmd()
 
 	ch := make(chan int64)
-	client := kinozalClient.GetDefaultClient()
+	client := kinozalClient.Client{
+		Config: kinozalClient.ClientConfig{
+			HttpClient:  pkg.DefaultHttpClient,
+			MainPageUrl: config.GetConfig().Kinozal.Domain,
+			Cookie:      config.GetConfig().Kinozal.Cookie,
+		},
+		Logger: config.GetLogger(),
+	}
 	bucket := config.GetBucket()
 
 	go client.Listing(ch, time.Minute)

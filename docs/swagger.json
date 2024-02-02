@@ -114,6 +114,32 @@
                 }
             }
         },
+        "/proxy": {
+            "get": {
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Proxy controller"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Url for proxied GET request",
+                        "name": "url",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "override content-type header",
+                        "name": "responseHeaderContentType",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/twitch/messages": {
             "get": {
                 "produces": [
@@ -143,7 +169,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/repository.TwitchChatMessage"
+                                "$ref": "#/definitions/twitch.ChatMessage"
                             }
                         }
                     },
@@ -185,7 +211,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/repository.TushqaQuote"
+                                "$ref": "#/definitions/twitch.TushqaQuote"
                             }
                         }
                     },
@@ -206,24 +232,7 @@
         }
     },
     "definitions": {
-        "repository.TushqaQuote": {
-            "type": "object",
-            "properties": {
-                "channel": {
-                    "type": "string"
-                },
-                "created": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "repository.TwitchChatMessage": {
+        "twitch.ChatMessage": {
             "type": "object",
             "properties": {
                 "channel": {
@@ -245,17 +254,34 @@
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/repository.TwitchChatUser"
+                    "$ref": "#/definitions/twitch.ChatUser"
                 }
             }
         },
-        "repository.TwitchChatUser": {
+        "twitch.ChatUser": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "twitch.TushqaQuote": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "created": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "message": {
                     "type": "string"
                 }
             }

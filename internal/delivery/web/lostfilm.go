@@ -47,13 +47,13 @@ func (c *LostFilmController) Add(g *gin.RouterGroup) {
 	g.GET("/rss", cacheMiddleware, c.rss())
 }
 
-// @Tags LostFilm controller
-// @Param quality query string false "Quality filter"
-// @Produce xml
-// @Produce json
-// @Success 200 {object} Rss
-// @Failure 400,500 {object} HTTPError
-// @Router /lostfilm/rss [get]
+//	@Tags		LostFilm controller
+//	@Param		quality	query	string	false	"Quality filter"
+//	@Produce	xml
+//	@Produce	json
+//	@Success	200		{object}	Rss
+//	@Failure	400,500	{object}	HTTPError
+//	@Router		/lostfilm/rss [get]
 func (c *LostFilmController) rss() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		quality := ctx.Query("quality")

@@ -13,13 +13,13 @@ func (c *TwitchController) Add(g *gin.RouterGroup) {
 	g.GET("/tushqa", c.tushqaQuotes())
 }
 
-// @Tags Twitch controller
-// @Param channel query string false "Channel filter"
-// @Param limit query int false "Message list limit" maximum(100)
-// @Produce json
-// @Success 200 {array} repository.TwitchChatMessage
-// @Failure 400,500 {object} HTTPError
-// @Router /twitch/messages [get]
+//	@Tags		Twitch controller
+//	@Param		channel	query	string	false	"Channel filter"
+//	@Param		limit	query	int		false	"Message list limit"	maximum(100)
+//	@Produce	json
+//	@Success	200		{array}		twitch.ChatMessage
+//	@Failure	400,500	{object}	HTTPError
+//	@Router		/twitch/messages [get]
 func (c *TwitchController) messages() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		data, err := twitch.GetLastMessages(ctx.Query("channel"), ctx.Query("limit"))
@@ -31,12 +31,12 @@ func (c *TwitchController) messages() func(ctx *gin.Context) {
 	}
 }
 
-// @Tags Twitch controller
-// @Param limit query int false "Quotes limit" maximum(100)
-// @Produce json
-// @Success 200 {array} repository.TushqaQuote
-// @Failure 400,500 {object} HTTPError
-// @Router /twitch/tushqa [get]
+//	@Tags		Twitch controller
+//	@Param		limit	query	int	false	"Quotes limit"	maximum(100)
+//	@Produce	json
+//	@Success	200		{array}		twitch.TushqaQuote
+//	@Failure	400,500	{object}	HTTPError
+//	@Router		/twitch/tushqa [get]
 func (c *TwitchController) tushqaQuotes() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		data, err := twitch.GetTushqaQuotes(ctx.Query("limit"))

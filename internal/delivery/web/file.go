@@ -18,13 +18,13 @@ func (c *FileController) Add(g *gin.RouterGroup) {
 	g.GET(":fileId", c.downloadFile())
 }
 
-// @Tags File controller
-// @Param fileId path string true "File id"
-// @Produce octet-stream
-// @Produce json
-// @Success 200 {file} file
-// @Failure 400,500 {object} HTTPError
-// @Router /dl/{fileId} [get]
+//	@Tags		File controller
+//	@Param		fileId	path	string	true	"File id"
+//	@Produce	octet-stream
+//	@Produce	json
+//	@Success	200		{file}		file
+//	@Failure	400,500	{object}	HTTPError
+//	@Router		/dl/{fileId} [get]
 func (c *FileController) downloadFile() func(ctx *gin.Context) {
 	log := config.GetLogger()
 	return func(ctx *gin.Context) {

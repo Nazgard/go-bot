@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"makarov.dev/bot/docs"
 	"net/http"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"makarov.dev/bot/docs"
 	"makarov.dev/bot/internal/config"
 )
 
@@ -91,6 +91,12 @@ func StartWeb(ctx context.Context) {
 	{
 		ctr := TwitchController{}
 		ctr.Add(twitchGroup)
+	}
+
+	proxyGroup := r.Group("/proxy")
+	{
+		ctr := ProxyController{}
+		ctr.Add(proxyGroup)
 	}
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

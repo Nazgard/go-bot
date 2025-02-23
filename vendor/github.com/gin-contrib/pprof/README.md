@@ -4,7 +4,6 @@
 [![codecov](https://codecov.io/gh/gin-contrib/pprof/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-contrib/pprof)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gin-contrib/pprof)](https://goreportcard.com/report/github.com/gin-contrib/pprof)
 [![GoDoc](https://godoc.org/github.com/gin-contrib/pprof?status.svg)](https://godoc.org/github.com/gin-contrib/pprof)
-[![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin)
 
 gin pprof middleware
 
@@ -32,8 +31,8 @@ import "github.com/gin-contrib/pprof"
 package main
 
 import (
-	"github.com/gin-contrib/pprof"
-	"github.com/gin-gonic/gin"
+  "github.com/gin-contrib/pprof"
+  "github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -47,10 +46,10 @@ func main() {
 
 ```go
 func main() {
-	router := gin.Default()
-	// default is "debug/pprof"
-	pprof.Register(router, "dev/pprof")
-	router.Run(":8080")
+  router := gin.Default()
+  // default is "debug/pprof"
+  pprof.Register(router, "dev/pprof")
+  router.Run(":8080")
 }
 ```
 
@@ -60,24 +59,23 @@ func main() {
 package main
 
 import (
-	"net/http"
+  "net/http"
 
-	"github.com/gin-contrib/pprof"
-	"github.com/gin-gonic/gin"
+  "github.com/gin-contrib/pprof"
+  "github.com/gin-gonic/gin"
 )
 
 func main() {
-	router := gin.Default()
-	pprof.Register(router)
-	adminGroup := router.Group("/admin", func(c *gin.Context) {
-		if c.Request.Header.Get("Authorization") != "foobar" {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-		c.Next()
-	})
-	pprof.RouteRegister(adminGroup, "pprof")
-	router.Run(":8080")
+  router := gin.Default()
+  debugGroup := router.Group("/debug", func(c *gin.Context) {
+    if c.Request.Header.Get("Authorization") != "foobar" {
+      c.AbortWithStatus(http.StatusForbidden)
+      return
+    }
+    c.Next()
+  })
+  pprof.RouteRegister(debugGroup, "pprof")
+  router.Run(":8080")
 }
 
 ```
@@ -93,7 +91,7 @@ go tool pprof http://localhost:8080/debug/pprof/heap
 Or to look at a 30-second CPU profile:
 
 ```bash
-go tool pprof http://localhost:8080/debug/pprof/profile
+go tool pprof http://localhost:8080/debug/pprof/profile?seconds=30
 ```
 
 Or to look at the goroutine blocking profile, after calling runtime.SetBlockProfileRate in your program:
@@ -106,4 +104,12 @@ Or to collect a 5-second execution trace:
 
 ```bash
 wget http://localhost:8080/debug/pprof/trace?seconds=5
+```
+
+Download the pprof profile data:
+
+```bash
+curl -v -H "Authorization: foobar" -o profile.pb.gz \
+  http://localhost:8080/debug/pprof/profile?seconds=60
+go tool pprof -http=:8099 profile.pb.gz
 ```

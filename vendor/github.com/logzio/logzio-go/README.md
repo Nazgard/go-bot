@@ -159,6 +159,21 @@ This project is licensed under the Apache License - see the [LICENSE](LICENSE) f
 
 
 ## Changelog 
+- v1.0.9
+    - Update dependencies:
+      - `github.com/shirou/gopsutil/v3`: `v3.24.2` -> `v3.24.5`
+    - Handle http.NewRequest error
+- v1.0.8
+    - Add `AwaitDrain` function to support ensuring all logs are drained in synchronous runtimes
+- v1.0.7
+    - Added set http client option (@orelazar1)
+    - Update dependencies:
+      - `github.com/shirou/gopsutil/v3`: `v3.22.3` -> `v3.24.2`
+      - `go.uber.org/atomic`: `v1.9.0` -> `v1.11.0`
+    - Update go version `1.15` -> `1.20`
+- v1.0.6
+    - Change logging
+    - Remove draining queue log
 - v1.0.5
     - Change `token` query parameter to optional for generic use
     - Changed logging levels

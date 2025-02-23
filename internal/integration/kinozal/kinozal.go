@@ -30,7 +30,7 @@ type Item struct {
 func SendToTelegram(item *Item) {
 	cfg := config.GetConfig()
 	_, err := telegram.SendMessage(tgbotapi.NewMessage(cfg.Telegram.KinozalUpdateChannel,
-		fmt.Sprintf("Вышла новая серия - %s", item.Name)))
+		fmt.Sprintf("Вышла новая серия - %s (%d)", item.Name, item.DetailId)))
 	if err != nil {
 		config.GetLogger().Errorf("%s (channel id %d) %s",
 			"Error while send kinozal item to telegram channel",

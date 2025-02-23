@@ -130,6 +130,14 @@ func New(token string, options ...SenderOptionFunc) (*LogzioSender, error) {
 	return l, nil
 }
 
+// SetHttpClient to change the default http client
+func SetHttpClient(client *http.Client) SenderOptionFunc {
+	return func(l *LogzioSender) error {
+		l.httpClient = client
+		return nil
+	}
+}
+
 // SetlogCountLimit to change the default limit
 func SetlogCountLimit(limit int) SenderOptionFunc {
 	return func(l *LogzioSender) error {
@@ -289,6 +297,10 @@ func (l *LogzioSender) makeHttpRequest(data bytes.Buffer, attempt int, c bool) i
 		lost = "0"
 	}
 	req, err := http.NewRequest("POST", l.url, &data)
+	if err != nil {
+		l.debugLog("sender: Error creating HTTP request for %s %s\n", l.url, err)
+		return httpError
+	}
 	req.Header.Add("Content-Type", "text/plain")
 	req.Header.Add("logzio-shipper", fmt.Sprintf("logzio-go/v1.0.0/%d/%s", attempt, lost))
 	if c {
@@ -451,4 +463,26 @@ func (l *LogzioSender) Write(p []byte) (n int, err error) {
 // CloseIdleConnections to close all remaining open connections
 func (l *LogzioSender) CloseIdleConnections() {
 	l.httpTransport.CloseIdleConnections()
+}
+
+// AwaitDrain waits for the sender to finish flushing all data up to a provided timeout
+func (l *LogzioSender) AwaitDrain(timeout time.Duration) bool {
+	l.Drain()
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	timeoutChan := time.After(timeout)
+
+	for {
+		select {
+		case <-ticker.C:
+			if !l.draining.Load() {
+				return true // nothing to drain
+			}
+		case <-timeoutChan:
+			l.errorLog("Timed out while waiting for draining to complete\n")
+			return false
+		}
+	}
 }

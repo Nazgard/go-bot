@@ -19,7 +19,7 @@ require (
 	github.com/swaggo/swag v1.16.2
 	github.com/umputun/go-flags v1.5.1
 	go.mongodb.org/mongo-driver v1.12.1
-	golang.org/x/net v0.25.0
+	golang.org/x/net v0.33.0
 	golang.org/x/text v0.21.0
 )
 

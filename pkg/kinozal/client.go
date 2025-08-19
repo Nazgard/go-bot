@@ -3,14 +3,14 @@ package kinozal
 import (
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/text/encoding/charmap"
@@ -102,7 +102,7 @@ func (c Client) GetElement(id int64) (*Element, error) {
 	if err != nil {
 		return nil, err
 	}
-	bytes, err := ioutil.ReadAll(r)
+	bytes, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}

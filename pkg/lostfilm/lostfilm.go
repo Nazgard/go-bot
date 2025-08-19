@@ -2,13 +2,16 @@ package lostfilm
 
 import (
 	"errors"
-	"github.com/sirupsen/logrus"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -80,6 +83,7 @@ func (c Client) GetRoot() ([]RootElement, error) {
 			c.Logger.Debug("Not found link")
 			return
 		}
+		_, episodeNumber := ExtractSeasonEpisode(link)
 		posterLink, foundPoster := row.Find(".thumb").Eq(0).Attr("src")
 		if !foundPoster {
 			posterLink = ""
@@ -93,12 +97,29 @@ func (c Client) GetRoot() ([]RootElement, error) {
 		if err != nil {
 			date = time.Now()
 		}
+
+		seriesName := row.Find(".name-ru").Eq(0).Text()
+		seriesNameEn := row.Find(".name-en").Eq(0).Text()
+		if seriesName == "" || seriesNameEn == "" {
+			c.Logger.Debug("Not found series name")
+			return
+		}
+
+		episodeName := row.Find(".alpha").Eq(0).Text()
+		episodeNameEn := row.Find(".beta").Eq(0).Text()
+
+		// episodeNumber > 0 тогда, когда link является сериалом см. ExtractSeasonEpisode
+		if episodeNumber > 0 && (episodeName == "" || episodeNameEn == "") {
+			c.Logger.Debug("Not found episode name")
+			return
+		}
+
 		r = append(r, RootElement{
 			Page:          link,
-			Name:          row.Find(".name-ru").Eq(0).Text(),
-			NameEN:        row.Find(".name-en").Eq(0).Text(),
-			EpisodeName:   row.Find(".alpha").Eq(0).Text(),
-			EpisodeNameEn: row.Find(".beta").Eq(0).Text(),
+			Name:          seriesName,
+			NameEN:        seriesNameEn,
+			EpisodeName:   episodeName,
+			EpisodeNameEn: episodeNameEn,
 			Date:          date,
 			order:         i,
 			Poster:        posterLink,
@@ -107,6 +128,30 @@ func (c Client) GetRoot() ([]RootElement, error) {
 	rows.Each(parseRow)
 
 	return r, nil
+}
+
+func ExtractSeasonEpisode(path string) (int, int) {
+	// Регулярка для series: season_X/episode_Y
+	reSeries := regexp.MustCompile(`season_(\d+)/episode_(\d+)/`)
+
+	if reSeries.MatchString(path) {
+		matches := reSeries.FindStringSubmatch(path)
+		if len(matches) == 3 {
+			var season, episode int
+			fmt.Sscanf(matches[1], "%d", &season)
+			fmt.Sscanf(matches[2], "%d", &episode)
+			return season, episode
+		}
+	}
+
+	// Если это movies
+	reMovies := regexp.MustCompile(`^/movies/`)
+	if reMovies.MatchString(path) {
+		return -1, -1
+	}
+
+	// Если ничего не подошло
+	return -2, -2
 }
 
 func (c Client) GetEpisode(page string) (*Episode, error) {

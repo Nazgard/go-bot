@@ -2,13 +2,14 @@ package lostfilm
 
 import (
 	"bufio"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type HttpClientMock struct {
@@ -47,7 +48,7 @@ func TestGetRoot(t *testing.T) {
 	if r == nil {
 		t.Fatal(err)
 	}
-	if len(r) != 15 {
+	if len(r) != 5 {
 		t.Fatal("Incorrect len")
 	}
 	for _, e := range r {

@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/integration/kinozal"
 	"makarov.dev/bot/internal/integration/telegram"
 	"makarov.dev/bot/pkg"
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type kinozalBackgroundJob struct {
@@ -76,9 +77,15 @@ func (c *kinozalBackgroundJob) Start() {
 				continue
 			}
 
-			element, _ := client.GetElement(id)
+			element, err := client.GetElement(id)
+			if err != nil {
+				log.Error("Error while get element", err.Error())
+				continue
+			}
 
-			objectID, err := bucket.UploadFromStream(strconv.FormatInt(id, 10)+".torrent", bytes.NewReader(element.Torrent))
+			reader := bytes.NewReader(element.Torrent)
+			fileName := strconv.FormatInt(id, 10) + ".torrent"
+			objectID, err := bucket.UploadFromStream(fileName, reader)
 			if err != nil {
 				log.Error("Error while store torrent", err.Error())
 				continue

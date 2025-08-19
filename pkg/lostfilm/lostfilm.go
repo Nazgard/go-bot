@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -189,6 +188,9 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 	trackUrl = strings.Replace(trackUrl, "0; url=", "", -1)
 
 	doc, err = c.getDoc(trackUrl)
+	if err != nil {
+		return nil, err
+	}
 
 	r := make([]TorrentRef, 0, 3)
 
@@ -220,7 +222,7 @@ func (c Client) GetTorrent(url string) ([]byte, error) {
 		c.Logger.Error(err.Error())
 		return nil, err
 	}
-	return ioutil.ReadAll(body)
+	return io.ReadAll(body)
 }
 
 func (c Client) Listing(ch chan RootElement, interval time.Duration) {

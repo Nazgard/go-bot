@@ -252,6 +252,7 @@ func (c Client) Listing(ch chan RootElement, interval time.Duration) {
 }
 
 func (c Client) getRequest(url string) (io.ReadCloser, error) {
+	c.Logger.Debugf("Get lostfilm request from %s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		c.Logger.Error(err.Error())

@@ -181,11 +181,14 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 		return nil, err
 	}
 
-	trackUrl, exists := doc.Find("meta").Attr("content")
-	if !exists {
+	html, err := doc.Html()
+	if err != nil {
+		return nil, err
+	}
+	trackUrl := extractTrackUrl(html)
+	if trackUrl == "" {
 		return nil, errors.New("track url not exists")
 	}
-	trackUrl = strings.Replace(trackUrl, "0; url=", "", -1)
 
 	doc, err = c.getDoc(trackUrl)
 	if err != nil {
@@ -214,6 +217,18 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 	})
 
 	return r, nil
+}
+
+func extractTrackUrl(input string) string {
+	re := regexp.MustCompile(`location\.replace\("([^"]+)"\)`)
+	matches := re.FindStringSubmatch(input)
+
+	if len(matches) > 1 {
+		url := matches[1]
+		return url
+	} else {
+		return ""
+	}
 }
 
 func (c Client) GetTorrent(url string) ([]byte, error) {

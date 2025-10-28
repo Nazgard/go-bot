@@ -30,6 +30,8 @@ func (c *HttpClientMock) Do(req *http.Request) (*http.Response, error) {
 		file, _ = os.Open("./torrent_ref1.thtml")
 	case "/v3/index.php":
 		file, _ = os.Open("./torrent_ref2.thtml")
+	case "/V/":
+		file, _ = os.Open("./torrent_ref2.thtml")
 	case "/td.php":
 		file, _ = os.Open("./Heels.S01E04.1080p.rus.LostFilm.TV.mkv.torrent")
 	}
@@ -126,7 +128,8 @@ func TestListing(t *testing.T) {
 
 func getClient() Client {
 	cfg := ClientConfig{
-		HttpClient: &HttpClientMock{},
+		HttpClient:  &HttpClientMock{},
+		MainPageUrl: "https://www.lostfilm.com",
 	}
 	return Client{Config: cfg, Logger: logrus.New()}
 }

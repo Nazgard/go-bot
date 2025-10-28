@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -189,6 +190,13 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 	if trackUrl == "" {
 		return nil, errors.New("track url not exists")
 	}
+	if !isValidURL(trackUrl) {
+		c.Logger.Errorf("Invalid track url %s try add host", trackUrl)
+		trackUrl = c.Config.MainPageUrl + trackUrl
+		if !isValidURL(trackUrl) {
+			c.Logger.Errorf("Invalid track url %s. Skip", trackUrl)
+		}
+	}
 
 	doc, err = c.getDoc(trackUrl)
 	if err != nil {
@@ -217,6 +225,26 @@ func (c Client) GetTorrentRefs(episodeId int64) ([]TorrentRef, error) {
 	})
 
 	return r, nil
+}
+
+func isValidURL(str string) bool {
+	// Пытаемся распарсить URL
+	u, err := url.Parse(str)
+	if err != nil {
+		return false
+	}
+
+	// Проверяем наличие схемы (http, https и т.д.)
+	if u.Scheme == "" {
+		return false
+	}
+
+	// Проверяем наличие хоста
+	if u.Host == "" {
+		return false
+	}
+
+	return true
 }
 
 func extractTrackUrl(input string) string {

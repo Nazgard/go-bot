@@ -50,8 +50,9 @@ func TestGetRoot(t *testing.T) {
 	if r == nil {
 		t.Fatal(err)
 	}
-	if len(r) != 5 {
-		t.Fatal("Incorrect len")
+	countItems := len(r)
+	if countItems != 15 {
+		t.Fatalf("Incorrect len %d", countItems)
 	}
 	for _, e := range r {
 		if e.Poster == "" {
@@ -110,6 +111,22 @@ func TestGetTorrent(t *testing.T) {
 	}
 	if r == nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPosterLink(t *testing.T) {
+	client := getClient()
+	r, err := client.GetRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r == nil {
+		t.Fatal(err)
+	}
+	for _, element := range r {
+		if element.Poster == "" {
+			t.Fatal("empty poster")
+		}
 	}
 }
 

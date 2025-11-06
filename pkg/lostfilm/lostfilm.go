@@ -88,6 +88,12 @@ func (c Client) GetRoot() ([]RootElement, error) {
 		if !foundPoster {
 			posterLink = ""
 		}
+		if !isValidURL(posterLink) {
+			posterLink = c.Config.MainPageUrl + posterLink
+			if !isValidURL(posterLink) {
+				posterLink = ""
+			}
+		}
 		rawDate := strings.Replace(
 			row.Find(".alpha").Eq(1).Text(),
 			"Дата выхода Ru: ",

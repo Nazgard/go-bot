@@ -5,20 +5,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mattn/go-mastodon"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"io"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/integration/telegram"
 	"makarov.dev/bot/pkg"
 	"makarov.dev/bot/pkg/lostfilm"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type Item struct {
@@ -244,7 +245,7 @@ func sendToTelegram(item *Item) {
 	cfg := config.GetConfig()
 	domain := cfg.Web.Domain
 
-	posterRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https:%s", item.Poster), nil)
+	posterRequest, err := http.NewRequest(http.MethodGet, item.Poster, nil)
 	if err != nil {
 		return
 	}

@@ -252,6 +252,7 @@ func sendToTelegram(item *Item) {
 
 	response, err := pkg.DefaultHttpClient.Do(posterRequest)
 	if err != nil {
+		config.GetLogger().Errorf("Error while send to telegram: %s", err.Error())
 		return
 	}
 	defer response.Body.Close()
@@ -300,7 +301,7 @@ func sendToMastodon(item Item) {
 		return
 	}
 	client := config.GetMastodonClient()
-	posterRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https:%s", item.Poster), nil)
+	posterRequest, err := http.NewRequest(http.MethodGet, item.Poster, nil)
 	if err != nil {
 		config.GetLogger().Errorf("Error while download poster for Mastodon status %s", err.Error())
 		return

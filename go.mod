@@ -1,6 +1,6 @@
 module makarov.dev/bot
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/Nazgard/logruzio v0.0.0-20220129210513-edc31b132b6f
@@ -19,8 +19,8 @@ require (
 	github.com/swaggo/swag v1.16.4
 	github.com/umputun/go-flags v1.5.1
 	go.mongodb.org/mongo-driver v1.17.2
-	golang.org/x/net v0.38.0
-	golang.org/x/text v0.23.0
+	golang.org/x/net v0.47.0
+	golang.org/x/text v0.31.0
 )
 
 require (
@@ -72,10 +72,10 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/arch v0.14.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/tools v0.30.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

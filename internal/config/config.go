@@ -148,5 +148,8 @@ func initProxy() {
 }
 
 func initMoment() {
-	goment.SetLocale(config.Locale)
+	err := goment.SetLocale(config.Locale)
+	if err != nil {
+		log.Fatalf("Can't set locale: %s", err.Error())
+	}
 }

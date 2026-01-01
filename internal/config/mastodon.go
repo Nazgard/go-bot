@@ -2,6 +2,8 @@ package config
 
 import (
 	"github.com/mattn/go-mastodon"
+	"makarov.dev/bot/pkg"
+
 	"sync"
 )
 
@@ -16,6 +18,7 @@ func NewMastodonClient() *mastodon.Client {
 		ClientSecret: cfg.ClientSecret,
 		AccessToken:  cfg.AccessToken,
 	})
+	mastodonClient.Client = *pkg.DefaultHttpClient
 	return mastodonClient
 }
 

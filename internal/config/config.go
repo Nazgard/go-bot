@@ -137,7 +137,7 @@ func initProxy() {
 	}
 	dealer, err := proxy.SOCKS5("tcp", config.Proxy.Socks5Addr, &auth, proxy.Direct)
 	if err != nil {
-		baseLogger.Errorf("Can't connect to the proxy: %s", err.Error())
+		GetLogger().Errorf("Can't connect to the proxy: %s", err.Error())
 	}
 
 	dealContext := func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -146,7 +146,7 @@ func initProxy() {
 
 	tr := &http.Transport{DialContext: dealContext}
 	transport = tr
-	baseLogger.Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
+	GetLogger().Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
 }
 
 func initMoment() {

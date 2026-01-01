@@ -18,7 +18,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/integration/telegram"
-	"makarov.dev/bot/pkg"
 	"makarov.dev/bot/pkg/lostfilm"
 )
 
@@ -43,12 +42,14 @@ type ItemFile struct {
 
 var Client = lostfilm.Client{
 	Config: lostfilm.ClientConfig{
-		HttpClient:  pkg.DefaultHttpClient,
+		HttpClient:  config.CreateConfiguredHttpClient(),
 		MainPageUrl: config.GetConfig().LostFilm.Domain,
 		Cookie:      http.Cookie{Name: config.GetConfig().LostFilm.CookieName, Value: config.GetConfig().LostFilm.CookieVal},
 	},
 	Logger: config.GetLogger(),
 }
+
+var lfClient = config.CreateConfiguredHttpClient()
 
 func StoreElement(element lostfilm.RootElement) {
 	cfg := config.GetConfig()
@@ -67,6 +68,10 @@ func StoreElement(element lostfilm.RootElement) {
 	episode, err := Client.GetEpisode(element.Page)
 	if err != nil {
 		log.Errorf("Error while get episode %s", err.Error())
+		return
+	}
+	if episode == nil {
+		log.Errorf("Error while get episode %s", "No episode found")
 		return
 	}
 
@@ -250,7 +255,7 @@ func sendToTelegram(item *Item) {
 		return
 	}
 
-	response, err := pkg.DefaultHttpClient.Do(posterRequest)
+	response, err := lfClient.Do(posterRequest)
 	if err != nil {
 		config.GetLogger().Errorf("Error while send to telegram: %s", err.Error())
 		return

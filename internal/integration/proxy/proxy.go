@@ -1,11 +1,12 @@
 package proxy
 
 import (
-	"golang.org/x/text/encoding/charmap"
 	"io"
-	"makarov.dev/bot/pkg"
 	"net/http"
 	"strings"
+
+	"golang.org/x/text/encoding/charmap"
+	"makarov.dev/bot/internal/config"
 )
 
 const (
@@ -14,9 +15,11 @@ const (
 	contentTypeHeader = "Content-Type"
 )
 
+var httpClient = config.CreateConfiguredHttpClient()
+
 // Get exec http get request to specific url
 func Get(url string) (string, http.Header) {
-	resp, err := pkg.DefaultHttpClient.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return err.Error(), nil
 	}

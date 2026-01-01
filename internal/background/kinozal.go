@@ -12,7 +12,6 @@ import (
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/integration/kinozal"
 	"makarov.dev/bot/internal/integration/telegram"
-	"makarov.dev/bot/pkg"
 	kinozalClient "makarov.dev/bot/pkg/kinozal"
 )
 
@@ -36,7 +35,7 @@ func (c *kinozalBackgroundJob) Start() {
 	ch := make(chan int64)
 	client := kinozalClient.Client{
 		Config: kinozalClient.ClientConfig{
-			HttpClient:  pkg.DefaultHttpClient,
+			HttpClient:  config.CreateConfiguredHttpClient(),
 			MainPageUrl: config.GetConfig().Kinozal.Domain,
 			Cookie:      config.GetConfig().Kinozal.Cookie,
 		},

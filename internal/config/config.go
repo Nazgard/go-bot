@@ -2,15 +2,15 @@ package config
 
 import (
 	"context"
-	"github.com/umputun/go-flags"
 	"net"
 	"net/http"
 	"sync"
 
+	"github.com/umputun/go-flags"
+
 	"github.com/nleeper/goment"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
-	"makarov.dev/bot/pkg"
 )
 
 type Config struct {
@@ -145,7 +145,7 @@ func initProxy() {
 	}
 
 	tr := &http.Transport{DialContext: dealContext}
-	pkg.DefaultHttpClient.Transport = tr
+	transport = tr
 	baseLogger.Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
 }
 

@@ -1,6 +1,6 @@
 module makarov.dev/bot
 
-go 1.24.0
+go 1.25.5
 
 require (
 	github.com/Nazgard/logruzio v0.0.0-20220129210513-edc31b132b6f

@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"net"
-	"net/http"
 	"sync"
 
 	"github.com/umputun/go-flags"
@@ -144,8 +143,7 @@ func initProxy() {
 		return dealer.Dial(network, address)
 	}
 
-	tr := &http.Transport{DialContext: dealContext}
-	transport = tr
+	transport.DialContext = dealContext
 	GetLogger().Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
 }
 

@@ -7,7 +7,7 @@ import (
 
 const defaultTimeout = 30 * time.Second
 
-var transport *http.Transport
+var transport = &http.Transport{}
 
 func CreateConfiguredHttpClient() *http.Client {
 	return &http.Client{

@@ -3,10 +3,14 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 	"makarov.dev/bot/internal/config"
 )
 
@@ -29,6 +33,35 @@ func (t *telegramLogger) Printf(format string, v ...any) {
 	config.GetLogger().Debug(v...)
 }
 
+func configureHttpClient() http.Client {
+	c := config.GetConfig()
+	if !c.Proxy.Enable {
+		return http.Client{}
+	}
+
+	var auth *proxy.Auth
+	if c.Proxy.Socks5User != "" && c.Proxy.Socks5Password != "" {
+		auth = &proxy.Auth{
+			User:     c.Proxy.Socks5User,
+			Password: c.Proxy.Socks5Password,
+		}
+	}
+
+	dialer, err := proxy.SOCKS5("tcp", c.Proxy.Socks5Addr, auth, proxy.Direct)
+	if err != nil {
+		log.Errorf("Can't connect to the proxy: %s (continuing without proxy)", err)
+		return http.Client{}
+	}
+
+	return http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return dialer.Dial(network, addr)
+			},
+		},
+	}
+}
+
 func Start(ctx context.Context) {
 	log := config.GetLogger()
 	cfg := config.GetConfig().Telegram
@@ -36,7 +69,9 @@ func Start(ctx context.Context) {
 		log.Info("Telegram integration disabled")
 		return
 	}
-	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
+
+	httpClient := configureHttpClient()
+	bot, err := tgbotapi.NewBotAPIWithClient(cfg.BotToken, &httpClient)
 	if err != nil {
 		log.Errorf("Error while connect to telegram %s %s", err.Error(), " retrying in 15 sec")
 		time.Sleep(15 * time.Second)

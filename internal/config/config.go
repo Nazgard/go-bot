@@ -7,7 +7,6 @@ import (
 
 	"github.com/umputun/go-flags"
 
-	"github.com/nleeper/goment"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
 )
@@ -107,7 +106,6 @@ func Init(logger *log.Logger) {
 		}
 		initLogger(logger)
 		initProxy()
-		initMoment()
 	})
 }
 
@@ -145,11 +143,4 @@ func initProxy() {
 
 	transport.DialContext = dealContext
 	GetLogger().Infof("Proxy %s enabled", config.Proxy.Socks5Addr)
-}
-
-func initMoment() {
-	err := goment.SetLocale(config.Locale)
-	if err != nil {
-		log.Fatalf("Can't set locale: %s", err.Error())
-	}
 }

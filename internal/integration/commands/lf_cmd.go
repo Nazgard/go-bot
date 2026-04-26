@@ -70,7 +70,7 @@ func sendLostFilmList() string {
 		if count >= 10 {
 			break
 		}
-		sb.WriteString(fmt.Sprintf("%s - %s\n", item.Id.Hex(), item.Name))
+		sb.WriteString(fmt.Sprintf("%s - %s - %s\n", item.Id.Hex(), item.Name, item.EpisodeNameFull))
 		count++
 	}
 

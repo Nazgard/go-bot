@@ -2,6 +2,7 @@ package background
 
 import (
 	"context"
+	_ "makarov.dev/bot/internal/integration/commands"
 	"makarov.dev/bot/internal/integration/telegram"
 )
 

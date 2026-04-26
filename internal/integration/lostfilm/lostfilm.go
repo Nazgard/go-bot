@@ -345,3 +345,50 @@ func sendToMastodon(item Item) {
 		config.GetLogger().Debugf("Posted status to Mastodon for item %s", item.Page)
 	}
 }
+
+func ResendToTelegram(item *Item) error {
+	cfg := config.GetConfig()
+	domain := cfg.Web.Domain
+
+	posterRequest, err := http.NewRequest(http.MethodGet, item.Poster, nil)
+	if err != nil {
+		return err
+	}
+
+	response, err := lfClient.Do(posterRequest)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	markups := tgbotapi.InlineKeyboardMarkup{
+		InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0),
+	}
+	buttons := make([]tgbotapi.InlineKeyboardButton, 0)
+	for _, file := range item.ItemFiles {
+		url := domain + "/dl/" + file.GridFsId.Hex()
+		buttons = append(buttons, tgbotapi.InlineKeyboardButton{
+			Text: file.Quality,
+			URL:  &url,
+		})
+	}
+	markups.InlineKeyboard = append(markups.InlineKeyboard, buttons)
+
+	msg := tgbotapi.PhotoConfig{
+		BaseFile: tgbotapi.BaseFile{
+			BaseChat: tgbotapi.BaseChat{
+				ChatID:      cfg.Telegram.LostFilmUpdateChannel,
+				ReplyMarkup: markups,
+			},
+			File: tgbotapi.FileReader{
+				Name:   "img",
+				Reader: response.Body,
+				Size:   response.ContentLength,
+			},
+		},
+		Caption: fmt.Sprintf("%s. %s", item.Name, item.EpisodeNameFull),
+	}
+
+	_, err = telegram.SendMessage(msg)
+	return err
+}

@@ -3,9 +3,9 @@ package commands
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/integration/lostfilm"
 	"makarov.dev/bot/internal/integration/telegram"
@@ -70,7 +70,7 @@ func sendLostFilmList() string {
 		if count >= 10 {
 			break
 		}
-		sb.WriteString(fmt.Sprintf("%d. %s - %s\n", count, item.Name, item.EpisodeNameFull))
+		sb.WriteString(fmt.Sprintf("%s - %s\n", item.Id.Hex(), item.Name))
 		count++
 	}
 
@@ -78,22 +78,21 @@ func sendLostFilmList() string {
 }
 
 func resendLostFilm(id string) string {
-	objectID, err := strconv.Atoi(id)
+	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return "Неверный ID"
 	}
 
-	items, err := lostfilm.FindLatest(context.Background())
+	item, err := lostfilm.GetByID(objID)
 	if err != nil {
 		return fmt.Sprintf("Ошибка: %s", err.Error())
 	}
 
-	if objectID < 0 || objectID >= len(items) {
+	if item == nil {
 		return "Релиз не найден"
 	}
 
-	item := items[objectID]
-	err = lostfilm.ResendToTelegram(&item)
+	err = lostfilm.ResendToTelegram(item)
 	if err != nil {
 		return fmt.Sprintf("Ошибка: %s", err.Error())
 	}

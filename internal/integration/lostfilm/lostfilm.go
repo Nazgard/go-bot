@@ -238,6 +238,26 @@ func getByPage(page string) (*Item, error) {
 	return &item, nil
 }
 
+func GetByID(id primitive.ObjectID) (*Item, error) {
+	ctx, cancel := getContext()
+	defer cancel()
+
+	result := getCollection().FindOne(ctx, bson.D{{"_id", id}})
+	if result.Err() != nil {
+		if result.Err() != mongo.ErrNoDocuments {
+			return nil, result.Err()
+		}
+		return nil, nil
+	}
+	item := Item{}
+	err := result.Decode(&item)
+	if err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
+
 func getCollection() *mongo.Collection {
 	return config.GetDatabase().Collection("lostfilm_items")
 }

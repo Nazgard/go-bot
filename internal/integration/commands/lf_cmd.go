@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"makarov.dev/bot/internal/config"
 	"makarov.dev/bot/internal/integration/lostfilm"
 	"makarov.dev/bot/internal/integration/telegram"
@@ -63,39 +62,19 @@ func sendLostFilmList() string {
 		return "Нет релизов"
 	}
 
-	cfg := config.GetConfig()
-	markups := tgbotapi.InlineKeyboardMarkup{
-		InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0),
-	}
+	var sb strings.Builder
+	sb.WriteString("Последние релизы LostFilm:\n\n")
 
 	count := 0
 	for _, item := range items {
 		if count >= 10 {
 			break
 		}
-		url := cfg.Web.Domain + "/dl/" + item.ItemFiles[0].GridFsId.Hex()
-		btn := tgbotapi.InlineKeyboardButton{
-			Text: fmt.Sprintf("%s - %s", item.Name, item.EpisodeNameFull),
-			URL:  &url,
-		}
-		markups.InlineKeyboard = append(markups.InlineKeyboard, []tgbotapi.InlineKeyboardButton{btn})
+		sb.WriteString(fmt.Sprintf("%d. %s - %s\n", count, item.Name, item.EpisodeNameFull))
 		count++
 	}
 
-	msg := tgbotapi.MessageConfig{
-		BaseChat: tgbotapi.BaseChat{
-			ChatID:      0,
-			ReplyMarkup: markups,
-		},
-		Text: "Последние релизы LostFilm:",
-	}
-
-	_, err = telegram.SendMessage(msg)
-	if err != nil {
-		return fmt.Sprintf("Ошибка отправки: %s", err.Error())
-	}
-
-	return "Отправлено"
+	return sb.String()
 }
 
 func resendLostFilm(id string) string {

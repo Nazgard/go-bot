@@ -18,7 +18,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.4
 	github.com/umputun/go-flags v1.5.1
-	go.mongodb.org/mongo-driver v1.17.2
+	go.mongodb.org/mongo-driver v1.17.7
 	golang.org/x/net v0.47.0
 	golang.org/x/text v0.31.0
 )

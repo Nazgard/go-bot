@@ -1,13 +1,12 @@
 package optdec
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 
-	"github.com/bytedance/sonic/option"
-	"github.com/bytedance/sonic/internal/rt"
 	"github.com/bytedance/sonic/internal/caching"
+	"github.com/bytedance/sonic/internal/rt"
+	"github.com/bytedance/sonic/option"
 )
 
 var (
@@ -29,17 +28,17 @@ func findOrCompile(vt *rt.GoType) (decFunc, error) {
 }
 
 type compiler struct {
-	visited map[reflect.Type]bool
-	depth   int
-	counts  int
-	opts 	option.CompileOptions
+	visited  map[reflect.Type]bool
+	depth    int
+	counts   int
+	opts     option.CompileOptions
 	namedPtr bool
 }
 
 func newCompiler() *compiler {
 	return &compiler{
 		visited: make(map[reflect.Type]bool),
-		opts:  option.DefaultCompileOptions(),
+		opts:    option.DefaultCompileOptions(),
 	}
 }
 
@@ -169,7 +168,9 @@ func (c *compiler) compileBasic(vt reflect.Type) decFunc {
 	case reflect.Struct:
 		return c.compileStruct(vt)
 	default:
-		panic(&json.UnmarshalTypeError{Type: vt})
+		return &unsupportedTypeDecoder{
+			typ: rt.UnpackType(vt),
+		}
 	}
 }
 
@@ -199,7 +200,7 @@ func (c *compiler) compileArray(vt reflect.Type) decFunc {
 		len:      vt.Len(),
 		elemType: rt.UnpackType(vt.Elem()),
 		elemDec:  c.compile(vt.Elem()),
-		typ: vt,
+		typ:      vt,
 	}
 }
 
@@ -217,7 +218,7 @@ func (c *compiler) tryCompileSliceUnmarshaler(vt reflect.Type) decFunc {
 		return &sliceDecoder{
 			elemType: rt.UnpackType(vt.Elem()),
 			elemDec:  c.compile(vt.Elem()),
-			typ: vt,
+			typ:      vt,
 		}
 	}
 
@@ -225,7 +226,7 @@ func (c *compiler) tryCompileSliceUnmarshaler(vt reflect.Type) decFunc {
 		return &sliceDecoder{
 			elemType: rt.UnpackType(vt.Elem()),
 			elemDec:  c.compile(vt.Elem()),
-			typ: vt,
+			typ:      vt,
 		}
 	}
 	return nil
@@ -263,14 +264,14 @@ func (c *compiler) compileSlice(vt reflect.Type) decFunc {
 	if et.IsUint64() {
 		return &sliceU64Decoder{}
 	}
-	if et.Kind() == reflect.String {
+	if et.Kind() == reflect.String && et != rt.JsonNumberType {
 		return &sliceStringDecoder{}
 	}
 
 	return &sliceDecoder{
 		elemType: rt.UnpackType(vt.Elem()),
 		elemDec:  c.compile(vt.Elem()),
-		typ: vt,
+		typ:      vt,
 	}
 }
 
@@ -281,7 +282,7 @@ func (c *compiler) compileSliceBytes(vt reflect.Type) decFunc {
 		return &sliceBytesUnmarshalerDecoder{
 			elemType: rt.UnpackType(vt.Elem()),
 			elemDec:  c.compile(vt.Elem()),
-			typ: vt,
+			typ:      vt,
 		}
 	}
 
@@ -289,7 +290,7 @@ func (c *compiler) compileSliceBytes(vt reflect.Type) decFunc {
 		return &sliceBytesUnmarshalerDecoder{
 			elemType: rt.UnpackType(vt.Elem()),
 			elemDec:  c.compile(vt.Elem()),
-				typ: vt,
+			typ:      vt,
 		}
 	}
 
@@ -343,10 +344,10 @@ func (c *compiler) compileMap(vt reflect.Type) decFunc {
 	// Some common integer map later
 	mt := rt.MapType(rt.UnpackType(vt))
 
-	if mt.Key.Kind() == reflect.String {
+	if mt.Key.Kind() == reflect.String && mt.Key != rt.JsonNumberType {
 		return &mapStrKeyDecoder{
 			mapType: mt,
-			assign: rt.GetMapStrAssign(vt),
+			assign:  rt.GetMapStrAssign(vt),
 			elemDec: c.compile(vt.Elem()),
 		}
 	}
@@ -355,7 +356,7 @@ func (c *compiler) compileMap(vt reflect.Type) decFunc {
 		return &mapI64KeyDecoder{
 			mapType: mt,
 			elemDec: c.compile(vt.Elem()),
-			assign: rt.GetMap64Assign(vt),
+			assign:  rt.GetMap64Assign(vt),
 		}
 	}
 
@@ -363,7 +364,7 @@ func (c *compiler) compileMap(vt reflect.Type) decFunc {
 		return &mapI32KeyDecoder{
 			mapType: mt,
 			elemDec: c.compile(vt.Elem()),
-			assign: rt.GetMap32Assign(vt),
+			assign:  rt.GetMap32Assign(vt),
 		}
 	}
 
@@ -371,7 +372,7 @@ func (c *compiler) compileMap(vt reflect.Type) decFunc {
 		return &mapU64KeyDecoder{
 			mapType: mt,
 			elemDec: c.compile(vt.Elem()),
-			assign: rt.GetMap64Assign(vt),
+			assign:  rt.GetMap64Assign(vt),
 		}
 	}
 
@@ -379,7 +380,7 @@ func (c *compiler) compileMap(vt reflect.Type) decFunc {
 		return &mapU32KeyDecoder{
 			mapType: mt,
 			elemDec: c.compile(vt.Elem()),
-			assign: rt.GetMap32Assign(vt),
+			assign:  rt.GetMap32Assign(vt),
 		}
 	}
 
@@ -392,14 +393,19 @@ func (c *compiler) compileMap(vt reflect.Type) decFunc {
 }
 
 func tryCompileKeyUnmarshaler(vt reflect.Type) decKey {
-	pt := reflect.PtrTo(vt.Key())
+	kt := vt.Key()
 
-	/* check for `encoding.TextUnmarshaler` with pointer receiver */
-	if pt.Implements(encodingTextUnmarshalerType) {
+	/* map key type itself implements encoding.TextUnmarshaler */
+	if kt.Kind() != reflect.Interface && kt.Implements(encodingTextUnmarshalerType) {
 		return decodeKeyTextUnmarshaler
 	}
 
-	/* not support map key with `json.Unmarshaler` */
+	/* check for `encoding.TextUnmarshaler` with pointer receiver */
+	if kt.Kind() != reflect.Interface && kt.Kind() != reflect.Ptr && reflect.PtrTo(kt).Implements(encodingTextUnmarshalerType) {
+		return decodeKeyTextUnmarshaler
+	}
+
+	/* NOTE: encoding/json not support map key with `json.Unmarshaler` */
 	return nil
 }
 
@@ -413,19 +419,29 @@ func (c *compiler) compileMapKey(vt reflect.Type) decKey {
 		return decodeKeyU8
 	case reflect.Uint16:
 		return decodeKeyU16
+	// NOTE: actually, encoding/json can't use float as map key
+	case reflect.Float32:
+		return decodeFloat32Key
+	case reflect.Float64:
+		return decodeFloat64Key
+	case reflect.String:
+		if rt.UnpackType(vt.Key()) == rt.JsonNumberType {
+			return decodeJsonNumberKey
+		}
+		fallthrough
 	default:
-		panic(&json.UnmarshalTypeError{Type: vt})
+		return nil
 	}
 }
 
-// maybe vt is a named type, and not a pointer receiver, see issue 379  
+// maybe vt is a named type, and not a pointer receiver, see issue 379
 func (c *compiler) tryCompilePtrUnmarshaler(vt reflect.Type, strOpt bool) decFunc {
 	pt := reflect.PtrTo(vt)
 
 	/* check for `json.Unmarshaler` with pointer receiver */
 	if pt.Implements(jsonUnmarshalerType) {
 		return &unmarshalJSONDecoder{
-			typ: rt.UnpackType(pt),
+			typ:    rt.UnpackType(pt),
 			strOpt: strOpt,
 		}
 	}

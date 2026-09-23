@@ -35,7 +35,7 @@
 
 ## Быстрый старт
 
-Нужны Go 1.25+ и MongoDB.
+Нужны Go 1.26+ и MongoDB.
 
 ```bash
 go run ./cmd/app

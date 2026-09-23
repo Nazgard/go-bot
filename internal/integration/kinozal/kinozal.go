@@ -44,7 +44,7 @@ func SendToTelegram(item *Item) {
 func IsFavorite(id int64) (bool, error) {
 	ctx, cancelFunc := getContext()
 	defer cancelFunc()
-	result := getFavoriteCollection().FindOne(ctx, bson.D{{"detail_id", id}})
+	result := getFavoriteCollection().FindOne(ctx, bson.D{{Key: "detail_id", Value: id}})
 	if result.Err() != nil {
 		if !errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			return false, result.Err()
@@ -112,7 +112,7 @@ func LastEpisodes(ctx context.Context) ([]Item, error) {
 	log := config.GetLogger()
 	limit := int64(50)
 	cursor, err := getItemsCollection().Find(ctx, bson.D{}, &options.FindOptions{
-		Sort:  bson.D{{"created", -1}},
+		Sort:  bson.D{{Key: "created", Value: -1}},
 		Limit: &limit,
 	})
 	if err != nil {

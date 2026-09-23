@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,6 +24,7 @@ type Account struct {
 	StatusesCount  int64          `json:"statuses_count"`
 	Note           string         `json:"note"`
 	URL            string         `json:"url"`
+	URI            string         `json:"uri"`
 	Avatar         string         `json:"avatar"`
 	AvatarStatic   string         `json:"avatar_static"`
 	Header         string         `json:"header"`
@@ -69,6 +71,10 @@ func (u *UnixTimeString) UnmarshalJSON(b []byte) error {
 	}
 	u.Time = time.Unix(timestamp, 0)
 	return nil
+}
+
+func (u UnixTimeString) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strconv.FormatInt(u.Unix(), 10))
 }
 
 // History is the history of a followed tag
@@ -177,10 +183,47 @@ func (c *Client) AccountUpdate(ctx context.Context, profile *Profile) (*Account,
 	return &account, nil
 }
 
+// AccountStatuses iterates over statuses for the provided account id.
+func (c *Client) AccountStatuses(ctx context.Context, id ID, pg *Pagination) iter.Seq2[*Status, error] {
+	return func(yield func(*Status, error) bool) {
+		var zero Pagination
+		if pg == nil {
+			pg = &Pagination{}
+		}
+		for {
+			vs, err := c.GetAccountStatuses(ctx, id, pg)
+			if err != nil {
+				_ = yield(nil, err)
+				return
+			}
+
+			for _, v := range vs {
+				if !yield(v, nil) {
+					return
+				}
+			}
+
+			if *pg == zero {
+				return
+			}
+		}
+	}
+}
+
 // GetAccountStatuses return statuses by specified account.
 func (c *Client) GetAccountStatuses(ctx context.Context, id ID, pg *Pagination) ([]*Status, error) {
 	var statuses []*Status
 	err := c.doAPI(ctx, http.MethodGet, fmt.Sprintf("/api/v1/accounts/%s/statuses", url.PathEscape(string(id))), nil, &statuses, pg)
+	if err != nil {
+		return nil, err
+	}
+	return statuses, nil
+}
+
+// GetAccountStatusesParams return statuses by specified account.
+func (c *Client) GetAccountStatusesParams(ctx context.Context, id ID, params url.Values, pg *Pagination) ([]*Status, error) {
+	var statuses []*Status
+	err := c.doAPI(ctx, http.MethodGet, fmt.Sprintf("/api/v1/accounts/%s/statuses", url.PathEscape(string(id))), params, &statuses, pg)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +376,20 @@ func (c *Client) AccountsSearch(ctx context.Context, q string, limit int64) ([]*
 	params := url.Values{}
 	params.Set("q", q)
 	params.Set("limit", fmt.Sprint(limit))
+
+	var accounts []*Account
+	err := c.doAPI(ctx, http.MethodGet, "/api/v1/accounts/search", params, &accounts, nil)
+	if err != nil {
+		return nil, err
+	}
+	return accounts, nil
+}
+
+func (c *Client) AccountsSearchResolve(ctx context.Context, q string, limit int64, resolve bool) ([]*Account, error) {
+	params := url.Values{}
+	params.Set("q", q)
+	params.Set("limit", fmt.Sprint(limit))
+	params.Set("resolve", fmt.Sprint(resolve))
 
 	var accounts []*Account
 	err := c.doAPI(ctx, http.MethodGet, "/api/v1/accounts/search", params, &accounts, nil)

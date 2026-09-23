@@ -1,4 +1,5 @@
-// +build !amd64 !go1.17 go1.24
+//go:build !amd64 || !go1.17 || go1.28
+// +build !amd64 !go1.17 go1.28
 
 package rt
 
@@ -15,6 +16,23 @@ func DecodeBase64(raw []byte) ([]byte, error) {
 	return ret[:n], nil
 }
 
-func EncodeBase64(src []byte) string {
-    return base64.StdEncoding.EncodeToString(src)
+func EncodeBase64ToString(src []byte) string {
+	return base64.StdEncoding.EncodeToString(src)
+}
+
+func EncodeBase64(buf []byte, src []byte) []byte {
+	if len(src) == 0 {
+		return append(buf, '"', '"')
+	}
+	buf = append(buf, '"')
+	need := base64.StdEncoding.EncodedLen(len(src))
+	if cap(buf)-len(buf) < need {
+		tmp := make([]byte, len(buf), len(buf)+need*2)
+		copy(tmp, buf)
+		buf = tmp
+	}
+	base64.StdEncoding.Encode(buf[len(buf):cap(buf)], src)
+	buf = buf[:len(buf)+need]
+	buf = append(buf, '"')
+	return buf
 }

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,7 +43,9 @@ func (c *Client) doAPI(ctx context.Context, method string, uri string, params in
 	if err != nil {
 		return err
 	}
-	u.Path = path.Join(u.Path, uri)
+	// uri may contain percent-encoded path segments (e.g. hashtags); JoinPath
+	// keeps them intact instead of escaping the percent signs again.
+	u = u.JoinPath(uri)
 
 	var req *http.Request
 	ct := "application/x-www-form-urlencoded"
@@ -112,23 +115,34 @@ func (c *Client) doAPI(ctx context.Context, method string, uri string, params in
 				return ctx.Err()
 			}
 
+			// the request body was consumed by the previous attempt.
+			if req.GetBody != nil {
+				req.Body, err = req.GetBody()
+				if err != nil {
+					return err
+				}
+			}
+
 			backoff = time.Duration(1.5 * float64(backoff))
 			continue
 		}
 		break
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		return parseAPIError("bad request", resp)
 	} else if res == nil {
 		return nil
 	} else if pg != nil {
-		if lh := resp.Header.Get("Link"); lh != "" {
-			pg2, err := newPagination(lh)
+		switch lh := resp.Header.Get("Link"); lh {
+		case "":
+			*pg = Pagination{}
+		default:
+			_, next, err := newPaginationPrevNext(lh)
 			if err != nil {
 				return err
 			}
-			*pg = *pg2
+			*pg = next
 		}
 	}
 
@@ -151,6 +165,8 @@ func NewClient(config *Config) *Client {
 }
 
 // Authenticate gets access-token to the API.
+// DEPRECATED: Authenticating with username and password is no longer supported, please use
+// GetAppAccessToken() or GetUserAccessToken() instead
 func (c *Client) Authenticate(ctx context.Context, username, password string) error {
 	params := url.Values{
 		"client_id":     {c.Config.ClientID},
@@ -159,12 +175,14 @@ func (c *Client) Authenticate(ctx context.Context, username, password string) er
 		"username":      {username},
 		"password":      {password},
 		"scope":         {"read write follow"},
+		"redirect_uri":  {"urn:ietf:wg:oauth:2.0:oob"},
 	}
 
 	return c.authenticate(ctx, params)
 }
 
 // AuthenticateApp logs in using client credentials.
+// DEPRECATED: use GetAppAccessToken() instead
 func (c *Client) AuthenticateApp(ctx context.Context) error {
 	params := url.Values{
 		"client_id":     {c.Config.ClientID},
@@ -176,9 +194,22 @@ func (c *Client) AuthenticateApp(ctx context.Context) error {
 	return c.authenticate(ctx, params)
 }
 
+// GetAppAccessToken exchanges API Credentials for an application Access Token
+// https://docs.joinmastodon.org/api/oauth-tokens/#app-tokens
+func (c *Client) GetAppAccessToken(ctx context.Context, redirectURI string) error {
+	params := url.Values{
+		"client_id":     {c.Config.ClientID},
+		"client_secret": {c.Config.ClientSecret},
+		"grant_type":    {"client_credentials"},
+		"redirect_uri":  {redirectURI},
+	}
+
+	return c.getAccessToken(ctx, params)
+}
+
 // AuthenticateToken logs in using a grant token returned by Application.AuthURI.
-//
 // redirectURI should be the same as Application.RedirectURI.
+// DEPRECATED:  Use GetUserAccessToken() instead
 func (c *Client) AuthenticateToken(ctx context.Context, authCode, redirectURI string) error {
 	params := url.Values{
 		"client_id":     {c.Config.ClientID},
@@ -191,6 +222,21 @@ func (c *Client) AuthenticateToken(ctx context.Context, authCode, redirectURI st
 	return c.authenticate(ctx, params)
 }
 
+// GetUserAccessToken exhanges a user provided authorization code for an User Access Token
+// https://docs.joinmastodon.org/api/oauth-tokens/#user-tokens
+func (c *Client) GetUserAccessToken(ctx context.Context, authCode, redirectURI string) error {
+	params := url.Values{
+		"client_id":     {c.Config.ClientID},
+		"client_secret": {c.Config.ClientSecret},
+		"grant_type":    {"authorization_code"},
+		"code":          {authCode},
+		"redirect_uri":  {redirectURI},
+	}
+
+	return c.getAccessToken(ctx, params)
+}
+
+// DEPRECATED: Use getAccessToken() instead
 func (c *Client) authenticate(ctx context.Context, params url.Values) error {
 	u, err := url.Parse(c.Config.Server)
 	if err != nil {
@@ -225,6 +271,61 @@ func (c *Client) authenticate(ctx context.Context, params url.Values) error {
 		return err
 	}
 	c.Config.AccessToken = res.AccessToken
+	return nil
+}
+
+// Exchanges credentials for an access token to be used by applications and sets the access token in the client config
+func (c *Client) getAccessToken(ctx context.Context, params url.Values) error {
+	u, err := url.Parse(c.Config.Server)
+	if err != nil {
+		return err
+	}
+	u.Path = path.Join(u.Path, "/oauth/token")
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), strings.NewReader(params.Encode()))
+	if err != nil {
+		return err
+	}
+	req = req.WithContext(ctx)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if c.UserAgent != "" {
+		req.Header.Set("User-Agent", c.UserAgent)
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return parseAPIError("bad authorization", resp)
+	}
+
+	var res struct {
+		AccessToken string `json:"access_token"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&res)
+	if err != nil {
+		return err
+	}
+
+	c.Config.AccessToken = res.AccessToken
+
+	return nil
+}
+
+// RevokeToken revokes the access token of the client and clears it from the
+// config on success.
+func (c *Client) RevokeToken(ctx context.Context) error {
+	params := url.Values{
+		"client_id":     {c.Config.ClientID},
+		"client_secret": {c.Config.ClientSecret},
+		"token":         {c.Config.AccessToken},
+	}
+	if err := c.doAPI(ctx, http.MethodPost, "/oauth/revoke", params, nil, nil); err != nil {
+		return err
+	}
+	c.Config.AccessToken = ""
 	return nil
 }
 
@@ -288,13 +389,15 @@ type Attachment struct {
 	PreviewURL  string         `json:"preview_url"`
 	TextURL     string         `json:"text_url"`
 	Description string         `json:"description"`
+	BlurHash    string         `json:"blurhash"`
 	Meta        AttachmentMeta `json:"meta"`
 }
 
 // AttachmentMeta holds information for attachment metadata.
 type AttachmentMeta struct {
-	Original AttachmentSize `json:"original"`
-	Small    AttachmentSize `json:"small"`
+	Original AttachmentSize  `json:"original"`
+	Small    AttachmentSize  `json:"small"`
+	Focus    AttachmentFocus `json:"focus"`
 }
 
 // AttachmentSize holds information for attatchment size.
@@ -303,6 +406,12 @@ type AttachmentSize struct {
 	Height int64   `json:"height"`
 	Size   string  `json:"size"`
 	Aspect float64 `json:"aspect"`
+}
+
+// AttachmentSize holds information for attatchment size.
+type AttachmentFocus struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 // Emoji hold information for CustomEmoji.
@@ -328,33 +437,39 @@ type Pagination struct {
 	Limit   int64
 }
 
-func newPagination(rawlink string) (*Pagination, error) {
+func newPaginationPrevNext(rawlink string) (prev, next Pagination, err error) {
 	if rawlink == "" {
-		return nil, errors.New("empty link header")
+		return prev, next, errors.New("empty link header")
 	}
 
-	p := &Pagination{}
 	for _, link := range linkheader.Parse(rawlink) {
 		switch link.Rel {
 		case "next":
-			maxID, err := getPaginationID(link.URL, "max_id")
+			next, err = paginationFromLink(link.URL)
 			if err != nil {
-				return nil, err
+				return prev, next, err
 			}
-			p.MaxID = maxID
-		case "prev":
-			sinceID, err := getPaginationID(link.URL, "since_id")
-			if err != nil {
-				return nil, err
-			}
-			p.SinceID = sinceID
 
-			minID, err := getPaginationID(link.URL, "min_id")
+		case "prev":
+			prev, err = paginationFromLink(link.URL)
 			if err != nil {
-				return nil, err
+				return prev, next, err
 			}
-			p.MinID = minID
 		}
+	}
+
+	return
+}
+
+func paginationFromLink(link string) (p Pagination, err error) {
+	uri, err := url.Parse(link)
+	if err != nil {
+		return p, err
+	}
+
+	err = p.fromValues(uri.Query())
+	if err != nil {
+		return p, err
 	}
 
 	return p, nil
@@ -367,6 +482,24 @@ func getPaginationID(rawurl, key string) (ID, error) {
 	}
 
 	return ID(u.Query().Get(key)), nil
+}
+
+func (p *Pagination) fromValues(vs url.Values) error {
+	p.MaxID = ID(vs.Get("max_id"))
+	p.MinID = ID(vs.Get("min_id"))
+	p.SinceID = ID(vs.Get("since_id"))
+
+	switch v := vs.Get("limit"); v {
+	case "":
+		p.Limit = 0
+	default:
+		limit, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return fmt.Errorf("could not parse 'limit' query: %w", err)
+		}
+		p.Limit = limit
+	}
+	return nil
 }
 
 func (p *Pagination) toValues() url.Values {

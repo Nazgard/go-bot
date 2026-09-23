@@ -165,7 +165,7 @@ func FindLatest(ctx context.Context) ([]Item, error) {
 	log := config.GetLogger()
 	limit := int64(50)
 	cursor, err := getCollection().Find(ctx, bson.D{}, &options.FindOptions{
-		Sort:  bson.D{{"date", -1}, {"created", -1}},
+		Sort:  bson.D{{Key: "date", Value: -1}, {Key: "created", Value: -1}},
 		Limit: &limit,
 	})
 	if err != nil {
@@ -209,7 +209,7 @@ func update(item *Item) error {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	_, err := getCollection().UpdateOne(ctx, bson.D{{"_id", item.Id}}, bson.M{"$set": item})
+	_, err := getCollection().UpdateOne(ctx, bson.D{{Key: "_id", Value: item.Id}}, bson.M{"$set": item})
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func getByPage(page string) (*Item, error) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	result := getCollection().FindOne(ctx, bson.D{{"page", page}})
+	result := getCollection().FindOne(ctx, bson.D{{Key: "page", Value: page}})
 	if result.Err() != nil {
 		if result.Err() != mongo.ErrNoDocuments {
 			return nil, result.Err()
@@ -242,7 +242,7 @@ func GetByID(id primitive.ObjectID) (*Item, error) {
 	ctx, cancel := getContext()
 	defer cancel()
 
-	result := getCollection().FindOne(ctx, bson.D{{"_id", id}})
+	result := getCollection().FindOne(ctx, bson.D{{Key: "_id", Value: id}})
 	if result.Err() != nil {
 		if result.Err() != mongo.ErrNoDocuments {
 			return nil, result.Err()
